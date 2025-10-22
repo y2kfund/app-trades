@@ -690,7 +690,6 @@ onBeforeUnmount(() => {
 :deep(.tabulator-footer) {
   background-color: #f8f9fa;
   border-top: 1px solid #dee2e6;
-  padding: 0.5rem;
 }
 
 :deep(.tabulator-page) {
