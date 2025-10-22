@@ -256,6 +256,25 @@ const columns = computed(() => [
     contextMenu: createFetchedAtContextMenu()
   },
   {
+    title: 'FIFO Realized',
+    field: 'fifoPnlRealized',
+    minWidth: 80,
+    hozAlign: 'right',
+    sorter: 'number',
+    // ensure Tabulator sees a numeric value (DB stores text)
+    mutator: (value: any) => {
+      const n = parseFloat(value)
+      return isNaN(n) ? 0 : n
+    },
+    formatter: (cell: any) => {
+      // cell.getValue() will now be a number thanks to mutator
+      return `<span style="font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
+    },
+    bottomCalc: 'sum',
+    bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue() || 0),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
     title: 'Commission',
     field: 'ibCommission',
     minWidth: 120,
