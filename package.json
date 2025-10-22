@@ -27,6 +27,7 @@
   "dependencies": {
     "ag-grid-community": "^34.2.0",
     "ag-grid-vue3": "^34.2.0",
+    "tabulator-tables": "^6.3.1",
     "vue": "^3.4.0"
   },
   "peerDependencies": {
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@tanstack/vue-query": "^5.0.0",
     "@types/node": "^24.4.0",
+    "@types/tabulator-tables": "^6.2.11",
     "@vitejs/plugin-vue": "^5.0.0",
     "@y2kfund/core": "file:../app-core",
     "rollup": "^4.0.0",

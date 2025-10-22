@@ -1,11 +1,7 @@
-<!-- filepath: /Users/raj/vk-project/y2kfund/app-trades/src/Trades.vue -->
+<!-- filepath: /Users/sb/gt/y2kfund/app-trades/src/Trades.vue -->
 <script setup lang="ts">
-import { onBeforeUnmount, computed, ref, watch } from 'vue'
-import { AgGridVue } from 'ag-grid-vue3'
-import { AllCommunityModule } from 'ag-grid-community'
-import type { ColDef } from 'ag-grid-community'
-import 'ag-grid-community/styles/ag-grid.css'
-import 'ag-grid-community/styles/ag-theme-alpine.css'
+import { onBeforeUnmount, onMounted, computed, ref, watch, nextTick } from 'vue'
+import { TabulatorFull as Tabulator } from 'tabulator-tables'
 import { useTradesQuery, type Trade } from '@y2kfund/core/trades'
 import type { TradesProps } from './index'
 
@@ -24,95 +20,133 @@ const emit = defineEmits<{
 // Query trades data with realtime updates
 const q = useTradesQuery(props.accountId, props.userId)
 
-// Cleanup realtime subscription
-onBeforeUnmount(() => {
-  q._cleanup?.()
-})
+// Tabulator instance
+const tableDiv = ref<HTMLDivElement | null>(null)
+let tabulator: Tabulator | null = null
+const isTabulatorReady = ref(false)
+const isTableInitialized = ref(false)
 
-// Grid configuration
-const gridApi = ref<any>(null)
-const columnApiRef = ref<any>(null)
-const pinnedBottomRowDataRef = ref<any[]>([])
-
-const columnDefs = computed<ColDef[]>(() => [
-  { 
-    field: 'symbol', 
-    headerName: 'Symbol',
-    width: 120,
-    pinned: 'left' as const,
-    cellStyle: { fontWeight: '600', color: '#007bff' }
-  },
-  { 
-    field: 'buySell', 
-    headerName: 'Side',
-    width: 80,
-    cellStyle: (params) => {
-      if (params.value === 'BUY') return { color: '#28a745', fontWeight: 'bold' }
-      if (params.value === 'SELL') return { color: '#dc3545', fontWeight: 'bold' }
-      return {}
-    }
-  },
-  { 
-    field: 'quantity', 
-    headerName: 'Quantity',
-    width: 120,
-    type: 'rightAligned',
-    valueFormatter: (params) => formatNumber(parseFloat(params.value) || 0)
-  },
-  { 
-    field: 'tradePrice', 
-    headerName: 'Price',
-    width: 120,
-    type: 'rightAligned',
-    valueFormatter: (params) => formatCurrency(parseFloat(params.value) || 0)
-  },
-  { 
-    field: 'assetCategory', 
-    headerName: 'Asset Class',
-    width: 120
-  },
-  { 
-    field: 'tradeDate', 
-    headerName: 'Trade Date',
-    width: 120,
-    valueFormatter: (params) => {
-      if (!params.value) return ''
-      return new Date(params.value).toLocaleDateString()
-    }
-  },
-  { 
-    field: 'settleDateTarget', 
-    headerName: 'Settlement Date',
-    width: 140,
-    valueFormatter: (params) => {
-      if (!params.value) return ''
-      return new Date(params.value).toLocaleDateString()
-    }
-  },
-  { 
-    field: 'ibCommission', 
-    headerName: 'Commission',
-    width: 120,
-    type: 'rightAligned',
-    valueFormatter: (params) => formatCurrency(parseFloat(params.value) || 0),
-    cellStyle: { color: '#dc3545', fontWeight: '600' }
-  }
-])
-
-const defaultColDef: ColDef = {
-  sortable: true,
-  filter: true,
-  resizable: true,
-  flex: 1,
-  minWidth: 100
+// Toast system
+type ToastType = 'success' | 'error' | 'warning' | 'info'
+interface Toast {
+  id: number
+  type: ToastType
+  title: string
+  message?: string
 }
 
-const gridOptions = {
-  animateRows: true,
-  domLayout: 'autoHeight',
-  pinnedBottomRowData: pinnedBottomRowDataRef.value,
-  suppressRowClickSelection: true,
-  rowSelection: 'single'
+const toasts = ref<Toast[]>([])
+let toastIdCounter = 0
+
+function showToast(type: ToastType, title: string, message?: string) {
+  const id = toastIdCounter++
+  toasts.value.push({ id, type, title, message })
+  setTimeout(() => removeToast(id), 5000)
+}
+
+function removeToast(id: number) {
+  const index = toasts.value.findIndex(t => t.id === id)
+  if (index !== -1) toasts.value.splice(index, 1)
+}
+
+// Generic timezone formatting function
+function formatTimestampWithTimezone(timestamp: string | null | undefined): string {
+  if (!timestamp) {
+    return '⏱️ Last Updated: Not available'
+  }
+  
+  try {
+    const date = new Date(timestamp)
+    
+    // Detect user's timezone
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    
+    // Map common timezones to their abbreviations with DST support
+    const timezoneMap: { [key: string]: string } = {
+      'Asia/Kolkata': 'IST',
+      'Asia/Calcutta': 'IST',
+      'America/New_York': date.getMonth() >= 2 && date.getMonth() < 10 ? 'EDT' : 'EST',
+      'America/Los_Angeles': date.getMonth() >= 2 && date.getMonth() < 10 ? 'PDT' : 'PST',
+      'America/Chicago': date.getMonth() >= 2 && date.getMonth() < 10 ? 'CDT' : 'CST',
+      'America/Denver': date.getMonth() >= 2 && date.getMonth() < 10 ? 'MDT' : 'MST',
+      'Europe/London': date.getMonth() >= 2 && date.getMonth() < 9 ? 'BST' : 'GMT',
+      'Europe/Paris': date.getMonth() >= 2 && date.getMonth() < 9 ? 'CEST' : 'CET',
+      'Australia/Sydney': date.getMonth() >= 9 || date.getMonth() < 3 ? 'AEDT' : 'AEST',
+    }
+    
+    // Get the timezone abbreviation
+    const timezoneName = timezoneMap[userTimeZone] || userTimeZone
+    
+    const formattedDate = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: userTimeZone
+    })
+    
+    const formattedTime = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      timeZone: userTimeZone
+    })
+    
+    return `⏱️ Last Updated: ${formattedDate} at ${formattedTime} ${timezoneName}`
+  } catch (error) {
+    return `⏱️ Last Updated: ${timestamp}`
+  }
+}
+
+// Generic context menu for columns showing fetched_at timestamp
+function createFetchedAtContextMenu() {
+  return [
+    {
+      label: (component: any) => {
+        const rowData = component.getData()
+        return formatTimestampWithTimezone(rowData.fetched_at)
+      },
+      action: () => {},
+      disabled: true
+    },
+    {
+      separator: true
+    },
+    {
+      label: '📋 Copy timestamp to clipboard',
+      action: (e: any, component: any) => {
+        const rowData = component.getData()
+        const fetchedAt = rowData.fetched_at
+        
+        if (fetchedAt) {
+          navigator.clipboard.writeText(fetchedAt)
+            .then(() => {
+              showToast('success', 'Copied!', 'Timestamp copied to clipboard')
+            })
+            .catch((err) => {
+              console.error('Failed to copy:', err)
+              showToast('error', 'Copy Failed', 'Could not copy timestamp')
+            })
+        } else {
+          showToast('warning', 'No Data', 'No timestamp available to copy')
+        }
+      }
+    }
+  ]
+}
+
+// Format helpers
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value)
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat('en-US').format(value)
 }
 
 // Computed values for summary
@@ -130,85 +164,202 @@ const netQuantity = computed(() => {
   }, 0)
 })
 
-// Format helpers
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value)
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US').format(value)
-}
-
-function onGridReady(params: any) {
-  gridApi.value = params.api
-  columnApiRef.value = params.columnApi
-  recalcPinnedTotals()
-}
-
-function recalcPinnedTotals() {
-  const api = gridApi.value
-  if (!api || !q.data.value) return
-  
-  // Get all displayed (filtered/sorted) rows
-  const displayedRows: any[] = []
-  api.forEachNodeAfterFilterAndSort((node: any) => {
-    if (node.data) {
-      displayedRows.push(node.data)
-    }
-  })
-  
-  // Calculate totals
-  const totalCommissionSum = displayedRows.reduce((acc, row) => {
-    const value = parseFloat(row.ibCommission) || 0
-    return acc + value
-  }, 0)
-  
-  const totalQuantitySum = displayedRows.reduce((acc, row) => {
-    const value = parseFloat(row.quantity) || 0
-    return acc + value
-  }, 0)
-  
-  // Update pinned bottom row
-  const totals = {
-    symbol: 'TOTAL',
-    buySell: '',
-    quantity: totalQuantitySum.toString(),
-    tradePrice: null,
-    assetCategory: '',
-    tradeDate: '',
-    settleDateTarget: '',
-    ibCommission: totalCommissionSum.toString()
+// Column definitions
+const columns = computed(() => [
+  {
+    title: 'Account',
+    field: 'legal_entity',
+    minWidth: 120,
+    frozen: true,
+    sorter: 'string',
+    formatter: (cell: any) => {
+      const value = cell.getValue()
+      return value ? `<span style="font-weight: 500;">${value}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>'
+    },
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Symbol',
+    field: 'symbol',
+    minWidth: 120,
+    frozen: true,
+    sorter: 'string',
+    formatter: (cell: any) => {
+      return `<span style="font-weight: 600; color: #007bff;">${cell.getValue()}</span>`
+    },
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Side',
+    field: 'buySell',
+    minWidth: 80,
+    sorter: 'string',
+    formatter: (cell: any) => {
+      const value = cell.getValue()
+      if (value === 'BUY') {
+        return `<span style="color: #28a745; font-weight: bold;">BUY</span>`
+      }
+      if (value === 'SELL') {
+        return `<span style="color: #dc3545; font-weight: bold;">SELL</span>`
+      }
+      return value
+    },
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Quantity',
+    field: 'quantity',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatNumber(parseFloat(cell.getValue()) || 0),
+    bottomCalc: 'sum',
+    bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue()),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Price',
+    field: 'tradePrice',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Asset Class',
+    field: 'assetCategory',
+    minWidth: 120,
+    sorter: 'string',
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Trade Date',
+    field: 'tradeDate',
+    minWidth: 120,
+    sorter: 'date',
+    formatter: (cell: any) => {
+      if (!cell.getValue()) return ''
+      return new Date(cell.getValue()).toLocaleDateString()
+    },
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Settlement Date',
+    field: 'settleDateTarget',
+    minWidth: 140,
+    sorter: 'date',
+    formatter: (cell: any) => {
+      if (!cell.getValue()) return ''
+      return new Date(cell.getValue()).toLocaleDateString()
+    },
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Commission',
+    field: 'ibCommission',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => {
+      return `<span style="color: #dc3545; font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
+    },
+    bottomCalc: 'sum',
+    bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue()),
+    contextMenu: createFetchedAtContextMenu()
   }
-  
-  pinnedBottomRowDataRef.value = [totals]
-}
+])
 
-function onRowClicked(event: any) {
-  if (event.data) {
-    emit('row-click', event.data)
-    if (props.onRowClick) {
-      props.onRowClick(event.data)
+// Initialize Tabulator
+function initializeTabulator() {
+  if (!tableDiv.value) return
+
+  // Destroy existing table
+  if (tabulator) {
+    try { tabulator.destroy() } catch (error) {}
+    tabulator = null
+  }
+
+  isTabulatorReady.value = false
+
+  const tabulatorConfig: any = {
+    data: q.data.value || [],
+    columns: columns.value,
+    layout: 'fitColumns',
+    height: 'auto',
+    placeholder: 'No trades available',
+    virtualDom: false,
+    rowClick: (e: any, row: any) => {
+      const data = row.getData()
+      emit('row-click', data)
+      if (props.onRowClick) {
+        props.onRowClick(data)
+      }
     }
   }
+
+  try {
+    tabulator = new Tabulator(tableDiv.value, tabulatorConfig)
+    
+    tabulator.on('tableBuilt', function() {
+      isTabulatorReady.value = true
+    })
+  } catch (error) {
+    console.error('Error creating Tabulator:', error)
+  }
 }
+
+// Initialize when data is ready
+watch([() => q.isSuccess.value, tableDiv], async ([isSuccess, divRef]) => {
+  if (isSuccess && divRef && !isTableInitialized.value) {
+    await nextTick()
+    initializeTabulator()
+    isTableInitialized.value = true
+  }
+}, { immediate: true })
+
+// Update data when it changes
+watch(() => q.data.value, async (newData) => {
+  if (!tabulator || !newData) return
+  try {
+    tabulator.replaceData(newData)
+  } catch (error) {
+    console.warn('Error updating table data:', error)
+  }
+}, { deep: true })
 
 function onMinimize() {
   emit('minimize')
 }
 
-// Recalculate when data changes
-watch(() => q.data.value, () => {
-  recalcPinnedTotals()
+// Cleanup
+onBeforeUnmount(() => {
+  if (tabulator) {
+    try {
+      tabulator.destroy()
+    } catch (error) {
+      console.warn('Error destroying tabulator:', error)
+    }
+  }
+  q._cleanup?.()
 })
 </script>
 
 <template>
   <div class="trades-card">
+    <!-- Toast notifications -->
+    <div class="toast-container">
+      <div 
+        v-for="toast in toasts" 
+        :key="toast.id" 
+        :class="['toast', `toast-${toast.type}`]"
+      >
+        <strong>{{ toast.title }}</strong>
+        <span v-if="toast.message">{{ toast.message }}</span>
+        <button @click="removeToast(toast.id)" class="toast-close">×</button>
+      </div>
+    </div>
+
     <!-- Loading state -->
     <div v-if="q.isLoading.value" class="loading">
       <div class="loading-spinner"></div>
@@ -221,7 +372,7 @@ watch(() => q.data.value, () => {
       <p>{{ q.error.value }}</p>
     </div>
     
-    <!-- Success state with ag-grid -->
+    <!-- Success state with Tabulator -->
     <div v-else-if="q.isSuccess.value" class="trades-container">
       <div class="trades-header">
         <h2>
@@ -244,24 +395,16 @@ watch(() => q.data.value, () => {
         </div>
       </div>
 
-      <div class="ag-theme-alpine trades-grid">
-        <AgGridVue
-          :columnDefs="columnDefs"
-          :rowData="q.data.value || []"
-          :modules="[AllCommunityModule]"
-          :defaultColDef="defaultColDef"
-          :gridOptions="gridOptions"
-          @grid-ready="onGridReady"
-          @filter-changed="recalcPinnedTotals"
-          @sort-changed="recalcPinnedTotals"
-          @row-data-updated="recalcPinnedTotals"
-          @row-clicked="onRowClicked"
-          style="width: 100%;"
-        />
-      </div>
+      <!-- Tabulator table -->
+      <div ref="tableDiv" class="trades-grid"></div>
     </div>
   </div>
 </template>
+
+<style>
+/* Import Tabulator CSS globally */
+@import 'tabulator-tables/dist/css/tabulator_modern.min.css';
+</style>
 
 <style scoped>
 .trades-card {
@@ -270,6 +413,91 @@ watch(() => q.data.value, () => {
   border: 1px solid rgba(0,0,0,.1);
   box-shadow: 0 4px 12px rgba(0,0,0,.1);
   background: white;
+  position: relative;
+}
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  min-width: 250px;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: white;
+  border-left: 4px solid;
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-success {
+  border-left-color: #28a745;
+  background: #d4edda;
+}
+
+.toast-error {
+  border-left-color: #dc3545;
+  background: #f8d7da;
+}
+
+.toast-warning {
+  border-left-color: #ffc107;
+  background: #fff3cd;
+}
+
+.toast-info {
+  border-left-color: #17a2b8;
+  background: #d1ecf1;
+}
+
+.toast strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.toast span {
+  font-size: 0.8125rem;
+}
+
+.toast-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.toast-close:hover {
+  opacity: 1;
 }
 
 .trades-header {
@@ -384,40 +612,83 @@ watch(() => q.data.value, () => {
 
 .trades-grid {
   margin-top: 0.5rem;
-  height: 100%;
   min-height: 200px;
+  height: auto;
+  overflow: visible;
 }
 
-/* ag-Grid styling */
-::deep(.ag-theme-alpine) {
-  --ag-header-background-color: #f8f9fa;
-  --ag-header-foreground-color: #495057;
-  --ag-border-color: #dee2e6;
-  --ag-row-hover-color: #f8f9fa;
-  --ag-selected-row-background-color: #e3f2fd;
+/* Tabulator theme overrides */
+:deep(.tabulator) {
+  font-size: 0.875rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
-::deep(.ag-theme-alpine .ag-header-cell) {
+:deep(.tabulator-header) {
+  background-color: #f8f9fa !important;
+  border-bottom: 2px solid #dee2e6 !important;
+}
+
+:deep(.tabulator-col) {
+  border-right: 1px solid #dee2e6 !important;
   font-weight: 600;
-  font-size: 0.875rem;
-  border-right: 1px solid #dee2e6;
 }
 
-::deep(.ag-theme-alpine .ag-cell) {
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  border-right: 1px solid #dee2e6;
+:deep(.tabulator-col-title) {
+  color: #495057;
 }
 
-/* Highlight pinned bottom total row */
-::deep(.ag-theme-alpine .ag-row-pinned-bottom) {
+:deep(.tabulator-row) {
+  border-bottom: 1px solid #f1f3f5;
+}
+
+:deep(.tabulator-row:hover) {
+  background-color: #f8f9fa !important;
+}
+
+:deep(.tabulator-row.tabulator-selected) {
+  background-color: #e3f2fd !important;
+}
+
+:deep(.tabulator-cell) {
+  border-right: 1px solid #dee2e6 !important;
+  padding: 4px 8px;
+}
+
+/* Bottom calc row (totals) */
+:deep(.tabulator-row.tabulator-calcs) {
   background-color: #f1f3f5 !important;
   font-weight: 600;
+  border-top: 2px solid #dee2e6 !important;
 }
 
-::deep(.ag-theme-alpine .ag-row-pinned-bottom .ag-cell) {
-  border-top: 2px solid #dee2e6;
+:deep(.tabulator-row.tabulator-calcs .tabulator-cell) {
+  background-color: #f1f3f5 !important;
+}
+
+/* Pagination */
+:deep(.tabulator-footer) {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  padding: 0.5rem;
+}
+
+:deep(.tabulator-page) {
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  background: white;
+  margin: 0 0.125rem;
+}
+
+:deep(.tabulator-page.active) {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+:deep(.tabulator-page:hover:not(.disabled)) {
+  background: #e9ecef;
 }
 
 @media (max-width: 768px) {
@@ -432,7 +703,7 @@ watch(() => q.data.value, () => {
   }
   
   .trades-grid {
-    height: 300px;
+    height: auto;
   }
 }
 </style>
