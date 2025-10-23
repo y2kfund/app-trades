@@ -1,6 +1,6 @@
 <!-- filepath: /Users/sb/gt/y2kfund/app-trades/src/Trades.vue -->
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, computed, ref, watch, nextTick } from 'vue'
+import { onBeforeUnmount, onMounted, computed, ref, watch, nextTick, inject } from 'vue'
 import { DateTime } from 'luxon'                // <- added
 ;(window as any).luxon = { DateTime }          // <- expose for Tabulator
 import { TabulatorFull as Tabulator } from 'tabulator-tables'
@@ -18,6 +18,12 @@ const emit = defineEmits<{
   'row-click': [row: Trade]
   'minimize': []
 }>()
+
+const eventBus = inject<any>('eventBus')
+
+// Active filters
+type ActiveFilter = { field: 'legal_entity'; value: string }
+const activeFilters = ref<ActiveFilter[]>([])
 
 // Query trades data with realtime updates
 const q = useTradesQuery(props.accountId, props.userId)
@@ -168,20 +174,179 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value)
 }
 
-// Computed values for summary
-const totalTrades = computed(() => q.data.value?.length || 0)
-const totalCommission = computed(() => {
-  if (!q.data.value) return 0
-  return q.data.value.reduce((sum, trade) => sum + (parseFloat(trade.ibCommission) || 0), 0)
+// Filter handlers
+function handleCellFilterClick(field: 'legal_entity', value: any) {
+  if (field === 'legal_entity') {
+    const accountId = String(value)
+    const url = new URL(window.location.href)
+    url.searchParams.set('all_cts_clientId', accountId)
+    window.history.replaceState({}, '', url.toString())
+
+    if (eventBus) {
+      eventBus.emit('account-filter-changed', {
+        accountId,
+        source: 'trades'
+      })
+    }
+    
+    // Dispatch popstate to trigger URL-based watchers
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    return
+  }
+}
+
+const accountFilter = ref<string | null>(null)
+
+// Update filters to work with table
+function updateFilters() {
+  if (!tabulator || !isTabulatorReady.value) return
+
+  try {
+    tabulator.clearFilter(true)
+
+    tabulator.setFilter((data: any) => {
+      if (!data) return false
+
+      // Account filter
+      if (accountFilter.value) {
+        // Support both string and object for legal_entity
+        const accountVal = typeof data.legal_entity === 'object' && data.legal_entity !== null
+          ? (data.legal_entity.name || data.legal_entity.id)
+          : data.legal_entity
+        if (accountVal !== accountFilter.value) return false
+      }
+
+      return true
+    })
+
+    syncActiveFiltersFromTable()
+    nextTick(() => {
+      if (tabulator) tabulator.redraw()
+    })
+  } catch (error) {
+    console.warn('Error in updateFilters:', error)
+  }
+}
+
+function syncActiveFiltersFromTable() {
+  const next: ActiveFilter[] = []
+  if (accountFilter.value) {
+    next.push({ field: 'legal_entity', value: accountFilter.value })
+  }
+  activeFilters.value = next
+  
+  // Update total trades count
+  if (tabulator && isTabulatorReady.value) {
+    totalTrades.value = tabulator.getDataCount('active') || 0
+  } else {
+    totalTrades.value = q.data.value?.length || 0
+  }
+}
+
+function clearFilter(field: 'legal_entity') {
+  if (field === 'legal_entity') {
+    accountFilter.value = null
+    const url = new URL(window.location.href)
+    url.searchParams.delete('all_cts_clientId')
+    window.history.replaceState({}, '', url.toString())
+    // Emit event to other components
+    if (eventBus) {
+      eventBus.emit('account-filter-changed', {
+        accountId: null,
+        source: 'trades'
+      })
+    }
+  }
+  updateFilters()
+}
+
+function clearAllFilters() {
+  accountFilter.value = null
+  const url = new URL(window.location.href)
+  url.searchParams.delete('all_cts_clientId')
+  window.history.replaceState({}, '', url.toString())
+  // Emit event to other components
+  if (eventBus) {
+    eventBus.emit('account-filter-changed', {
+      accountId: null,
+      source: 'trades'
+    })
+  }
+  updateFilters()
+}
+
+// URL synchronization for filters
+function parseFiltersFromUrl(): { legal_entity?: string } {
+  const url = new URL(window.location.href)
+  const account = url.searchParams.get('all_cts_clientId') || undefined
+  return { legal_entity: account }
+}
+
+function handleExternalAccountFilter(payload: { accountId: string | null, source: string }) {
+  console.log('📍 [Trades] Received account filter:', payload)
+  if (payload.source === 'trades') return
+
+  // Apply or clear the filter
+  accountFilter.value = payload.accountId
+  const url = new URL(window.location.href)
+  if (payload.accountId) {
+    url.searchParams.set('all_cts_clientId', payload.accountId)
+  } else {
+    url.searchParams.delete('all_cts_clientId')
+  }
+  window.history.replaceState({}, '', url.toString())
+  updateFilters()
+}
+
+onMounted(async () => {
+  // Initialize filters from URL
+  const filters = parseFiltersFromUrl()
+  if (filters.legal_entity) accountFilter.value = filters.legal_entity
+
+  // Try to initialize if data is already loaded
+  if (q.isSuccess.value && tableDiv.value && !isTableInitialized.value) {
+    await nextTick()
+    initializeTabulator()
+    isTableInitialized.value = true
+  }
+
+  updateFilters()
+
+  if (eventBus) {
+    eventBus.on('account-filter-changed', handleExternalAccountFilter)
+  }
 })
 
-const netQuantity = computed(() => {
-  if (!q.data.value) return 0
-  return q.data.value.reduce((sum, trade) => {
-    const qty = parseFloat(trade.quantity) || 0
-    return sum + (trade.buySell === 'BUY' ? qty : -qty)
-  }, 0)
+// Cleanup
+onBeforeUnmount(() => {
+  if (tabulator) {
+    try {
+      tabulator.destroy()
+    } catch (error) {
+      console.warn('Error destroying tabulator:', error)
+    }
+  }
+  if (eventBus) {
+    eventBus.off('account-filter-changed', handleExternalAccountFilter)
+  }
+  q._cleanup?.()
 })
+
+window.addEventListener('popstate', () => {
+  const filters = parseFiltersFromUrl()
+  accountFilter.value = filters.legal_entity || null
+  updateFilters()
+})
+
+// Watch for account filter changes
+watch(accountFilter, () => {
+  if (tabulator && isTabulatorReady.value) {
+    updateFilters()
+  }
+})
+
+// Computed values for summary
+const totalTrades = ref(0)
 
 // Column definitions
 const columns = computed(() => [
@@ -205,7 +370,15 @@ const columns = computed(() => [
     sorter: 'string',
     formatter: (cell: any) => {
       const value = cell.getValue()
+      if (typeof value === 'object' && value !== null) {
+        return value.name || value.id || ''
+      }
       return value ? `<span style="font-weight: 500;">${value}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>'
+    },
+    cellClick: (e: any, cell: any) => {
+      const value = cell.getValue()
+      const accountName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
+      handleCellFilterClick('legal_entity', accountName)
     },
     contextMenu: createFetchedAtContextMenu()
   },
@@ -464,6 +637,12 @@ function initializeTabulator() {
     
     tabulator.on('tableBuilt', function() {
       isTabulatorReady.value = true
+      // Apply any filters that were set before the table was ready
+      updateFilters()
+      // Update total trades count
+      if (tabulator) {
+        totalTrades.value = tabulator.getDataCount('active') || 0
+      }
     })
   } catch (error) {
     console.error('Error creating Tabulator:', error)
@@ -476,6 +655,8 @@ watch([() => q.isSuccess.value, tableDiv], async ([isSuccess, divRef]) => {
     await nextTick()
     initializeTabulator()
     isTableInitialized.value = true
+    // Update total trades count
+    totalTrades.value = q.data.value?.length || 0
   }
 }, { immediate: true })
 
@@ -484,6 +665,14 @@ watch(() => q.data.value, async (newData) => {
   if (!tabulator || !newData) return
   try {
     tabulator.replaceData(newData)
+    // Re-apply filters after data update
+    nextTick(() => {
+      updateFilters()
+      // Update total trades count
+      if (tabulator) {
+        totalTrades.value = tabulator.getDataCount('active') || 0
+      }
+    })
   } catch (error) {
     console.warn('Error updating table data:', error)
   }
@@ -541,10 +730,7 @@ onBeforeUnmount(() => {
           <span v-else>Trades:</span>
         </h2>
         <div class="trades-tools">
-          <div class="trades-count">{{ totalTrades }} trades</div>
-          <div class="commission-total">Commission: {{ formatCurrency(totalCommission) }}</div>
-          <div class="net-quantity">Net Qty: {{ formatNumber(netQuantity) }}</div>
-          
+          <div class="trades-count">{{ totalTrades }} trades</div>          
           <button 
             v-if="showHeaderLink"
             @click="onMinimize"
@@ -553,6 +739,17 @@ onBeforeUnmount(() => {
           >
             −
           </button>
+        </div>
+      </div>
+
+      <div v-if="activeFilters.length" class="filters-bar">
+        <span class="filters-label">Filtered by:</span>
+        <div class="filters-tags">
+          <span v-for="f in activeFilters" :key="`${f.field}-${f.value}`" class="filter-tag">
+            <strong>{{ f.field === 'legal_entity' ? 'Account' : 'Unknown' }}:</strong> {{ f.value }}
+            <button class="tag-clear" @click="clearFilter(f.field)">✕</button>
+          </span>
+          <button class="btn btn-clear-all" @click="clearAllFilters">Clear all</button>
         </div>
       </div>
 
@@ -722,6 +919,51 @@ onBeforeUnmount(() => {
 
 .minimize-button:active {
   transform: scale(0.95);
+}
+
+.filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.filters-label {
+  font-size: 0.875rem;
+  color: #495057;
+  font-weight: 600;
+}
+.filters-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f1f3f5;
+  color: #495057;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #e9ecef;
+  font-size: 0.8125rem;
+}
+.filter-tag .tag-clear {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #6c757d;
+}
+.btn-clear-all {
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 0.8125rem;
 }
 
 .loading, .error {
