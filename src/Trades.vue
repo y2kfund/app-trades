@@ -443,10 +443,11 @@ function initializeTabulator() {
   isTabulatorReady.value = false
 
   const tabulatorConfig: any = {
-    data: q.data.value || [],
-    columns: columns.value,
-    layout: 'fitColumns',
-    height: 'auto',
+  data: q.data.value || [],
+  columns: columns.value,
+  layout: 'fitColumns',
+  // fixed height so Tabulator will keep header frozen and make the body scrollable
+  height: '60vh',
     placeholder: 'No trades available',
     virtualDom: false,
     rowClick: (e: any, row: any) => {
@@ -773,8 +774,8 @@ onBeforeUnmount(() => {
 .trades-grid {
   margin-top: 0.5rem;
   min-height: 200px;
-  height: auto;
-  overflow: visible;
+  height: 60vh; /* match Tabulator height so header stays fixed */
+  overflow: hidden;
 }
 
 /* Tabulator theme overrides */

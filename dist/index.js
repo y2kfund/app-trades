@@ -17720,7 +17720,8 @@ const Ed = { class: "trades-card" }, Rd = { class: "toast-container" }, Td = { k
         data: s.data.value || [],
         columns: z.value,
         layout: "fitColumns",
-        height: "auto",
+        // fixed height so Tabulator will keep header frozen and make the body scrollable
+        height: "60vh",
         placeholder: "No trades available",
         virtualDom: !1,
         rowClick: (y, R) => {
@@ -17819,7 +17820,7 @@ const Ed = { class: "trades-card" }, Rd = { class: "toast-container" }, Td = { k
   for (const [i, s] of e)
     t[i] = s;
   return t;
-}, _d = /* @__PURE__ */ Pd(Ad, [["__scopeId", "data-v-64c8ed64"]]);
+}, _d = /* @__PURE__ */ Pd(Ad, [["__scopeId", "data-v-a10fbfde"]]);
 export {
   _d as Trades,
   _d as default
