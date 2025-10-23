@@ -1,6 +1,8 @@
 <!-- filepath: /Users/sb/gt/y2kfund/app-trades/src/Trades.vue -->
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, computed, ref, watch, nextTick } from 'vue'
+import { DateTime } from 'luxon'                // <- added
+;(window as any).luxon = { DateTime }          // <- expose for Tabulator
 import { TabulatorFull as Tabulator } from 'tabulator-tables'
 import { useTradesQuery, type Trade } from '@y2kfund/core/trades'
 import type { TradesProps } from './index'
@@ -145,6 +147,23 @@ function formatCurrency(value: number): string {
   }).format(value)
 }
 
+// helper: parse dd/mm/yyyy or ISO-like date to timestamp (ms)
+function parseTradeDate(val: any): number | null {
+  if (!val) return null
+  const s = String(val).trim()
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(s)
+  if (m) {
+    let day = Number(m[1])
+    let month = Number(m[2]) - 1
+    let year = Number(m[3])
+    if (year < 100) year += 2000
+    const dt = new Date(year, month, day)
+    return isNaN(dt.getTime()) ? null : dt.getTime()
+  }
+  const dt = new Date(s)
+  return isNaN(dt.getTime()) ? null : dt.getTime()
+}
+
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value)
 }
@@ -238,20 +257,60 @@ const columns = computed(() => [
     field: 'tradeDate',
     minWidth: 120,
     sorter: 'date',
+    // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
+    sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
+      const ta = parseTradeDate(rowA.getData().tradeDate) || 0
+      const tb = parseTradeDate(rowB.getData().tradeDate) || 0
+      return ta - tb
+    },
     formatter: (cell: any) => {
-      if (!cell.getValue()) return ''
-      return new Date(cell.getValue()).toLocaleDateString()
+      const val = cell.getValue()
+      if (!val) return ''
+      // parse dd/mm/yyyy or d/m/yyyy -> format "Mon DD, YYYY" (e.g. "Jul 21, 2025")
+      const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(val).trim())
+      let dt: Date
+      if (m) {
+        const day = Number(m[1])
+        const month = Number(m[2]) - 1
+        let year = Number(m[3])
+        if (year < 100) year += 2000
+        dt = new Date(year, month, day)
+      } else {
+        dt = new Date(val)
+        if (isNaN(dt.getTime())) return String(val)
+      }
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     },
     contextMenu: createFetchedAtContextMenu()
   },
   {
-    title: 'Settlement Date',
+    title: 'Settlement Date Target',
     field: 'settleDateTarget',
     minWidth: 140,
     sorter: 'date',
+    // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
+    sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
+      const ta = parseTradeDate(rowA.getData().tradeDate) || 0
+      const tb = parseTradeDate(rowB.getData().tradeDate) || 0
+      return ta - tb
+    },
     formatter: (cell: any) => {
-      if (!cell.getValue()) return ''
-      return new Date(cell.getValue()).toLocaleDateString()
+      const val = cell.getValue()
+      if (!val) return ''
+      // parse dd/mm/yyyy or d/m/yyyy -> format "Mon DD, YYYY" (e.g. "Jul 21, 2025")
+      const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(val).trim())
+      let dt: Date
+      if (m) {
+        const day = Number(m[1])
+        const month = Number(m[2]) - 1
+        let year = Number(m[3])
+        if (year < 100) year += 2000
+        dt = new Date(year, month, day)
+      } else {
+        dt = new Date(val)
+        if (isNaN(dt.getTime())) return String(val)
+      }
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     },
     contextMenu: createFetchedAtContextMenu()
   },
