@@ -223,6 +223,15 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol', value: string) 
       url.searchParams.delete('all_cts_fi')
     }
     window.history.replaceState({}, '', url.toString())
+    
+    // Emit event to other components
+    if (eventBus) {
+      eventBus.emit('symbol-filter-changed', {
+        symbolTags: symbolTagFilters.value,
+        source: 'trades'
+      })
+    }
+    
     updateFilters()
   }
 }
@@ -394,6 +403,22 @@ function handleExternalAccountFilter(payload: { accountId: string | null, source
   updateFilters()
 }
 
+function handleExternalSymbolFilter(payload: { symbolTags: string[], source: string }) {
+  console.log('📍 [Trades] Received symbol filter:', payload)
+  if (payload.source === 'trades') return
+
+  // Apply the symbol filter
+  symbolTagFilters.value = payload.symbolTags
+  const url = new URL(window.location.href)
+  if (payload.symbolTags.length > 0) {
+    url.searchParams.set('all_cts_fi', payload.symbolTags.join(','))
+  } else {
+    url.searchParams.delete('all_cts_fi')
+  }
+  window.history.replaceState({}, '', url.toString())
+  updateFilters()
+}
+
 onMounted(async () => {
   // Initialize filters from URL
   const filters = parseFiltersFromUrl()
@@ -411,6 +436,7 @@ onMounted(async () => {
 
   if (eventBus) {
     eventBus.on('account-filter-changed', handleExternalAccountFilter)
+    eventBus.on('symbol-filter-changed', handleExternalSymbolFilter)
   }
 })
 
@@ -425,6 +451,7 @@ onBeforeUnmount(() => {
   }
   if (eventBus) {
     eventBus.off('account-filter-changed', handleExternalAccountFilter)
+    eventBus.off('symbol-filter-changed', handleExternalSymbolFilter)
   }
   q._cleanup?.()
 })
