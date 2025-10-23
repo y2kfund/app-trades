@@ -4,7 +4,7 @@ var Xs = (r) => {
 };
 var So = (r, e, t) => e in r ? Mo(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
 var C = (r, e, t) => So(r, typeof e != "symbol" ? e + "" : e, t), xi = (r, e, t) => e.has(r) || Xs("Cannot " + t);
-var y = (r, e, t) => (xi(r, e, "read from private field"), t ? t.call(r) : e.get(r)), j = (r, e, t) => e.has(r) ? Xs("Cannot add the same private member more than once") : e instanceof WeakSet ? e.add(r) : e.set(r, t), F = (r, e, t, i) => (xi(r, e, "write to private field"), i ? i.call(r, t) : e.set(r, t), t), J = (r, e, t) => (xi(r, e, "access private method"), t);
+var y = (r, e, t) => (xi(r, e, "read from private field"), t ? t.call(r) : e.get(r)), j = (r, e, t) => e.has(r) ? Xs("Cannot add the same private member more than once") : e instanceof WeakSet ? e.add(r) : e.set(r, t), O = (r, e, t, i) => (xi(r, e, "write to private field"), i ? i.call(r, t) : e.set(r, t), t), J = (r, e, t) => (xi(r, e, "access private method"), t);
 import { isRef as Yn, unref as Ht, hasInjectionContext as Do, inject as Hs, getCurrentScope as Lo, computed as Jn, shallowReactive as Fo, reactive as Oo, watch as Ge, onScopeDispose as zo, shallowReadonly as Ho, readonly as Ao, toRefs as Po, defineComponent as Io, ref as Le, onMounted as No, nextTick as ei, onBeforeUnmount as Ks, resolveComponent as _o, createElementBlock as de, openBlock as le, createElementVNode as ee, createCommentVNode as ti, Fragment as Qs, renderList as en, normalizeClass as Vo, toDisplayString as ot, createTextVNode as Mi, createBlock as Bo, withCtx as Wo } from "vue";
 class nt extends Error {
 }
@@ -3374,7 +3374,7 @@ function xl(r) {
   return r.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g, "\\$&");
 }
 function Ml(r, e) {
-  const t = be(e), i = be(e, "{2}"), s = be(e, "{3}"), n = be(e, "{4}"), o = be(e, "{6}"), a = be(e, "{1,2}"), l = be(e, "{1,3}"), h = be(e, "{1,6}"), u = be(e, "{1,9}"), d = be(e, "{2,4}"), c = be(e, "{4,6}"), f = (w) => ({ regex: RegExp(xl(w.val)), deser: ([b]) => b, literal: !0 }), v = ((w) => {
+  const t = be(e), i = be(e, "{2}"), s = be(e, "{3}"), n = be(e, "{4}"), o = be(e, "{6}"), a = be(e, "{1,2}"), l = be(e, "{1,3}"), h = be(e, "{1,6}"), u = be(e, "{1,9}"), d = be(e, "{2,4}"), c = be(e, "{4,6}"), f = (w) => ({ regex: RegExp(xl(w.val)), deser: ([p]) => p, literal: !0 }), v = ((w) => {
     if (r.literal)
       return f(w);
     switch (w.val) {
@@ -4089,12 +4089,12 @@ class M {
     if (c && u)
       throw new ut("Can't mix ordinal dates with month/day");
     const v = m || n.weekday && !f;
-    let w, b, k = ri(l, h);
-    v ? (w = Nl, b = Pl, k = mi(k, o, a)) : u ? (w = _l, b = Il, k = Fi(k)) : (w = hi, b = Xr);
-    let O = !1;
+    let w, p, T = ri(l, h);
+    v ? (w = Nl, p = Pl, T = mi(T, o, a)) : u ? (w = _l, p = Il, T = Fi(T)) : (w = hi, p = Xr);
+    let L = !1;
     for (const U of w) {
       const ge = n[U];
-      x(ge) ? O ? n[U] = b[U] : n[U] = k[U] : O = !0;
+      x(ge) ? L ? n[U] = p[U] : n[U] = T[U] : L = !0;
     }
     const _ = v ? pa(n, o, a) : u ? ga(n) : Rr(n), H = _ || Tr(n);
     if (H)
@@ -7513,7 +7513,7 @@ function ih(r, e = {}, t) {
   function c(f, m) {
     var v = [];
     return f.columns.forEach((w) => {
-      var b;
+      var p;
       if (w) {
         switch (typeof w.value) {
           case "object":
@@ -7523,11 +7523,11 @@ function ih(r, e = {}, t) {
             w.value = "";
             break;
         }
-        b = {
+        p = {
           content: w.value,
           colSpan: w.width,
           rowSpan: w.height
-        }, m && (b.styles = m), v.push(b);
+        }, m && (p.styles = m), v.push(p);
       }
     }), v;
   }
@@ -7539,13 +7539,13 @@ function sh(r, e, t) {
   var i = this, s = e.sheetName || "Sheet1", n = this.dependencyRegistry.lookup("XLSX"), o = n.utils.book_new(), a = new Q(this), l = "compress" in e ? e.compress : !0, h = e.writeOptions || { bookType: "xlsx", bookSST: !0, compression: l }, u;
   h.type = "binary", o.SheetNames = [], o.Sheets = {};
   function d() {
-    var m = [], v = [], w = {}, b = { s: { c: 0, r: 0 }, e: { c: r[0] ? r[0].columns.reduce((k, O) => k + (O && O.width ? O.width : 1), 0) : 0, r: r.length } };
-    return r.forEach((k, O) => {
+    var m = [], v = [], w = {}, p = { s: { c: 0, r: 0 }, e: { c: r[0] ? r[0].columns.reduce((T, L) => T + (L && L.width ? L.width : 1), 0) : 0, r: r.length } };
+    return r.forEach((T, L) => {
       var _ = [];
-      k.columns.forEach(function(H, Y) {
-        H ? (_.push(!(H.value instanceof Date) && typeof H.value == "object" ? JSON.stringify(H.value) : H.value), (H.width > 1 || H.height > -1) && (H.height > 1 || H.width > 1) && v.push({ s: { r: O, c: Y }, e: { r: O + H.height - 1, c: Y + H.width - 1 } })) : _.push("");
+      T.columns.forEach(function(H, Y) {
+        H ? (_.push(!(H.value instanceof Date) && typeof H.value == "object" ? JSON.stringify(H.value) : H.value), (H.width > 1 || H.height > -1) && (H.height > 1 || H.width > 1) && v.push({ s: { r: L, c: Y }, e: { r: L + H.height - 1, c: Y + H.width - 1 } })) : _.push("");
       }), m.push(_);
-    }), n.utils.sheet_add_aoa(w, m), w["!ref"] = n.utils.encode_range(b), v.length && (w["!merges"] = v), w;
+    }), n.utils.sheet_add_aoa(w, m), w["!ref"] = n.utils.encode_range(p), v.length && (w["!merges"] = v), w;
   }
   if (e.sheetOnly) {
     t(d());
@@ -7565,7 +7565,7 @@ function sh(r, e, t) {
     o.SheetNames.push(s), o.Sheets[s] = d();
   e.documentProcessing && (o = e.documentProcessing(o));
   function f(m) {
-    for (var v = new ArrayBuffer(m.length), w = new Uint8Array(v), b = 0; b != m.length; ++b) w[b] = m.charCodeAt(b) & 255;
+    for (var v = new ArrayBuffer(m.length), w = new Uint8Array(v), p = 0; p != m.length; ++p) w[p] = m.charCodeAt(p) & 255;
     return v;
   }
   u = n.write(o, h), t(f(u), "application/octet-stream");
@@ -8324,37 +8324,37 @@ function ph(r, e, t, i, s) {
 }
 function gh(r, e, t, i, s) {
   var n = this, o = r.getElement(), a = r.getValue(), l = o.getElementsByTagName("svg").length || 5, h = o.getElementsByTagName("svg")[0] ? o.getElementsByTagName("svg")[0].getAttribute("width") : 14, u = [], d = document.createElement("div"), c = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  function f(b) {
-    u.forEach(function(k, O) {
-      O < b ? (n.table.browser == "ie" ? k.setAttribute("class", "tabulator-star-active") : k.classList.replace("tabulator-star-inactive", "tabulator-star-active"), k.innerHTML = '<polygon fill="#488CE9" stroke="#014AAE" stroke-width="37.6152" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="259.216,29.942 330.27,173.919 489.16,197.007 374.185,309.08 401.33,467.31 259.216,392.612 117.104,467.31 144.25,309.08 29.274,197.007 188.165,173.919 "/>') : (n.table.browser == "ie" ? k.setAttribute("class", "tabulator-star-inactive") : k.classList.replace("tabulator-star-active", "tabulator-star-inactive"), k.innerHTML = '<polygon fill="#010155" stroke="#686868" stroke-width="37.6152" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="259.216,29.942 330.27,173.919 489.16,197.007 374.185,309.08 401.33,467.31 259.216,392.612 117.104,467.31 144.25,309.08 29.274,197.007 188.165,173.919 "/>');
+  function f(p) {
+    u.forEach(function(T, L) {
+      L < p ? (n.table.browser == "ie" ? T.setAttribute("class", "tabulator-star-active") : T.classList.replace("tabulator-star-inactive", "tabulator-star-active"), T.innerHTML = '<polygon fill="#488CE9" stroke="#014AAE" stroke-width="37.6152" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="259.216,29.942 330.27,173.919 489.16,197.007 374.185,309.08 401.33,467.31 259.216,392.612 117.104,467.31 144.25,309.08 29.274,197.007 188.165,173.919 "/>') : (n.table.browser == "ie" ? T.setAttribute("class", "tabulator-star-inactive") : T.classList.replace("tabulator-star-active", "tabulator-star-inactive"), T.innerHTML = '<polygon fill="#010155" stroke="#686868" stroke-width="37.6152" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="259.216,29.942 330.27,173.919 489.16,197.007 374.185,309.08 401.33,467.31 259.216,392.612 117.104,467.31 144.25,309.08 29.274,197.007 188.165,173.919 "/>');
     });
   }
-  function m(b) {
-    var k = document.createElement("span"), O = c.cloneNode(!0);
-    u.push(O), k.addEventListener("mouseenter", function(_) {
-      _.stopPropagation(), _.stopImmediatePropagation(), f(b);
-    }), k.addEventListener("mousemove", function(_) {
+  function m(p) {
+    var T = document.createElement("span"), L = c.cloneNode(!0);
+    u.push(L), T.addEventListener("mouseenter", function(_) {
+      _.stopPropagation(), _.stopImmediatePropagation(), f(p);
+    }), T.addEventListener("mousemove", function(_) {
       _.stopPropagation(), _.stopImmediatePropagation();
-    }), k.addEventListener("click", function(_) {
-      _.stopPropagation(), _.stopImmediatePropagation(), t(b), o.blur();
-    }), k.appendChild(O), d.appendChild(k);
+    }), T.addEventListener("click", function(_) {
+      _.stopPropagation(), _.stopImmediatePropagation(), t(p), o.blur();
+    }), T.appendChild(L), d.appendChild(T);
   }
-  function v(b) {
-    a = b, f(b);
+  function v(p) {
+    a = p, f(p);
   }
   if (o.style.whiteSpace = "nowrap", o.style.overflow = "hidden", o.style.textOverflow = "ellipsis", d.style.verticalAlign = "middle", d.style.display = "inline-block", d.style.padding = "4px", c.setAttribute("width", h), c.setAttribute("height", h), c.setAttribute("viewBox", "0 0 512 512"), c.setAttribute("xml:space", "preserve"), c.style.padding = "0 1px", s.elementAttributes && typeof s.elementAttributes == "object")
-    for (let b in s.elementAttributes)
-      b.charAt(0) == "+" ? (b = b.slice(1), d.setAttribute(b, d.getAttribute(b) + s.elementAttributes["+" + b])) : d.setAttribute(b, s.elementAttributes[b]);
+    for (let p in s.elementAttributes)
+      p.charAt(0) == "+" ? (p = p.slice(1), d.setAttribute(p, d.getAttribute(p) + s.elementAttributes["+" + p])) : d.setAttribute(p, s.elementAttributes[p]);
   for (var w = 1; w <= l; w++)
     m(w);
-  return a = Math.min(parseInt(a), l), f(a), d.addEventListener("mousemove", function(b) {
+  return a = Math.min(parseInt(a), l), f(a), d.addEventListener("mousemove", function(p) {
     f(0);
-  }), d.addEventListener("click", function(b) {
+  }), d.addEventListener("click", function(p) {
     t(0);
-  }), o.addEventListener("blur", function(b) {
+  }), o.addEventListener("blur", function(p) {
     i();
-  }), o.addEventListener("keydown", function(b) {
-    switch (b.keyCode) {
+  }), o.addEventListener("keydown", function(p) {
+    switch (p.keyCode) {
       case 39:
         v(a + 1);
         break;
@@ -8679,10 +8679,10 @@ const Bt = class Bt extends D {
       !this.invalidEdit && this.currentCell !== e && this.cancelEdit();
       return;
     }
-    function c(b) {
+    function c(p) {
       if (s.currentCell === e && !l) {
-        var k = s.chain("edit-success", [e, b], !0, !0);
-        return k === !0 || s.table.options.validationMode === "highlight" ? (l = !0, s.clearEditor(), e.modules.edit || (e.modules.edit = {}), e.modules.edit.edited = !0, s.editedCells.indexOf(e) == -1 && s.editedCells.push(e), b = s.transformEmptyValues(b, e), e.setValue(b, !0), k === !0) : (l = !0, s.invalidEdit = !0, s.focusCellNoEvent(e, !0), o(), setTimeout(() => {
+        var T = s.chain("edit-success", [e, p], !0, !0);
+        return T === !0 || s.table.options.validationMode === "highlight" ? (l = !0, s.clearEditor(), e.modules.edit || (e.modules.edit = {}), e.modules.edit.edited = !0, s.editedCells.indexOf(e) == -1 && s.editedCells.push(e), p = s.transformEmptyValues(p, e), e.setValue(p, !0), T === !0) : (l = !0, s.invalidEdit = !0, s.focusCellNoEvent(e, !0), o(), setTimeout(() => {
           l = !1;
         }, 10), !1);
       }
@@ -8690,8 +8690,8 @@ const Bt = class Bt extends D {
     function f() {
       s.currentCell === e && !l && s.cancelEdit();
     }
-    function m(b) {
-      o = b;
+    function m(p) {
+      o = p;
     }
     if (e.column.modules.edit.blocked)
       return this.mouseClick = !1, this.blur(a), !1;
@@ -8701,8 +8701,8 @@ const Bt = class Bt extends D {
           for (a.classList.add("tabulator-editing"), e.row.getElement().classList.add("tabulator-editing"), e.table.element.classList.add("tabulator-editing"); a.firstChild; ) a.removeChild(a.firstChild);
           a.appendChild(h), o();
           for (var v = a.children, w = 0; w < v.length; w++)
-            v[w].addEventListener("click", function(b) {
-              b.stopPropagation();
+            v[w].addEventListener("click", function(p) {
+              p.stopPropagation();
             });
         } else
           return console.warn("Edit Error - Editor should return an instance of Node, the editor returned:", h), this.blur(a), !1;
@@ -9202,24 +9202,24 @@ const ke = class ke extends D {
     e.modules.filter.value = t;
     function v() {
     }
-    function w(b) {
-      m = b;
+    function w(p) {
+      m = p;
     }
     if (e.modules.filter.headerElement && e.modules.filter.headerElement.parentNode && e.contentElement.removeChild(e.modules.filter.headerElement.parentNode), o) {
-      switch (e.modules.filter.emptyFunc = e.definition.headerFilterEmptyCheck || function(b) {
-        return !b && b !== 0;
+      switch (e.modules.filter.emptyFunc = e.definition.headerFilterEmptyCheck || function(p) {
+        return !p && p !== 0;
       }, a = document.createElement("div"), a.classList.add("tabulator-header-filter"), typeof e.definition.headerFilter) {
         case "string":
-          s.table.modules.edit.editors[e.definition.headerFilter] ? (l = s.table.modules.edit.editors[e.definition.headerFilter], (e.definition.headerFilter === "tick" || e.definition.headerFilter === "tickCross") && !e.definition.headerFilterEmptyCheck && (e.modules.filter.emptyFunc = function(b) {
-            return b !== !0 && b !== !1;
+          s.table.modules.edit.editors[e.definition.headerFilter] ? (l = s.table.modules.edit.editors[e.definition.headerFilter], (e.definition.headerFilter === "tick" || e.definition.headerFilter === "tickCross") && !e.definition.headerFilterEmptyCheck && (e.modules.filter.emptyFunc = function(p) {
+            return p !== !0 && p !== !1;
           })) : console.warn("Filter Error - Cannot build header filter, No such editor found: ", e.definition.editor);
           break;
         case "function":
           l = e.definition.headerFilter;
           break;
         case "boolean":
-          e.modules.edit && e.modules.edit.editor ? l = e.modules.edit.editor : e.definition.formatter && s.table.modules.edit.editors[e.definition.formatter] ? (l = s.table.modules.edit.editors[e.definition.formatter], (e.definition.formatter === "tick" || e.definition.formatter === "tickCross") && !e.definition.headerFilterEmptyCheck && (e.modules.filter.emptyFunc = function(b) {
-            return b !== !0 && b !== !1;
+          e.modules.edit && e.modules.edit.editor ? l = e.modules.edit.editor : e.definition.formatter && s.table.modules.edit.editors[e.definition.formatter] ? (l = s.table.modules.edit.editors[e.definition.formatter], (e.definition.formatter === "tick" || e.definition.formatter === "tickCross") && !e.definition.headerFilterEmptyCheck && (e.modules.filter.emptyFunc = function(p) {
+            return p !== !0 && p !== !1;
           })) : l = s.table.modules.edit.editors.input;
           break;
       }
@@ -9253,21 +9253,21 @@ const ke = class ke extends D {
           console.warn("Filter Error - Cannot add filter to " + o + " column, editor should return an instance of Node, the editor returned:", h);
           return;
         }
-        s.langBind("headerFilters|columns|" + e.definition.field, function(b) {
-          h.setAttribute("placeholder", typeof b < "u" && b ? b : e.definition.headerFilterPlaceholder || s.langText("headerFilters|default"));
-        }), h.addEventListener("click", function(b) {
-          b.stopPropagation(), h.focus();
-        }), h.addEventListener("focus", (b) => {
-          var k = this.table.columnManager.contentsElement.scrollLeft, O = this.table.rowManager.element.scrollLeft;
-          k !== O && (this.table.rowManager.scrollHorizontal(k), this.table.columnManager.scrollHorizontal(k));
-        }), d = !1, c = function(b) {
+        s.langBind("headerFilters|columns|" + e.definition.field, function(p) {
+          h.setAttribute("placeholder", typeof p < "u" && p ? p : e.definition.headerFilterPlaceholder || s.langText("headerFilters|default"));
+        }), h.addEventListener("click", function(p) {
+          p.stopPropagation(), h.focus();
+        }), h.addEventListener("focus", (p) => {
+          var T = this.table.columnManager.contentsElement.scrollLeft, L = this.table.rowManager.element.scrollLeft;
+          T !== L && (this.table.rowManager.scrollHorizontal(T), this.table.columnManager.scrollHorizontal(T));
+        }), d = !1, c = function(p) {
           d && clearTimeout(d), d = setTimeout(function() {
             n(h.value);
           }, s.table.options.headerFilterLiveFilterDelay);
-        }, e.modules.filter.headerElement = h, e.modules.filter.attrType = h.hasAttribute("type") ? h.getAttribute("type").toLowerCase() : "", e.modules.filter.tagType = h.tagName.toLowerCase(), e.definition.headerFilterLiveFilter !== !1 && (e.definition.headerFilter === "autocomplete" || e.definition.headerFilter === "tickCross" || (e.definition.editor === "autocomplete" || e.definition.editor === "tickCross") && e.definition.headerFilter === !0 || (h.addEventListener("keyup", c), h.addEventListener("search", c), e.modules.filter.attrType == "number" && h.addEventListener("change", function(b) {
+        }, e.modules.filter.headerElement = h, e.modules.filter.attrType = h.hasAttribute("type") ? h.getAttribute("type").toLowerCase() : "", e.modules.filter.tagType = h.tagName.toLowerCase(), e.definition.headerFilterLiveFilter !== !1 && (e.definition.headerFilter === "autocomplete" || e.definition.headerFilter === "tickCross" || (e.definition.editor === "autocomplete" || e.definition.editor === "tickCross") && e.definition.headerFilter === !0 || (h.addEventListener("keyup", c), h.addEventListener("search", c), e.modules.filter.attrType == "number" && h.addEventListener("change", function(p) {
           n(h.value);
-        }), e.modules.filter.attrType == "text" && this.table.browser !== "ie" && h.setAttribute("type", "search")), (e.modules.filter.tagType == "input" || e.modules.filter.tagType == "select" || e.modules.filter.tagType == "textarea") && h.addEventListener("mousedown", function(b) {
-          b.stopPropagation();
+        }), e.modules.filter.attrType == "text" && this.table.browser !== "ie" && h.setAttribute("type", "search")), (e.modules.filter.tagType == "input" || e.modules.filter.tagType == "select" || e.modules.filter.tagType == "textarea") && h.addEventListener("mousedown", function(p) {
+          p.stopPropagation();
         })), a.appendChild(h), e.contentElement.appendChild(a), i || s.headerFilterColumns.push(e), m && m();
       }
     } else
@@ -9557,8 +9557,8 @@ function Ph(r, e = {}, t) {
       break;
     case "object":
       if (Array.isArray(e.color)) {
-        let w = 100 / e.color.length, b = Math.floor(h / w);
-        b = Math.min(b, e.color.length - 1), b = Math.max(b, 0), u = e.color[b];
+        let w = 100 / e.color.length, p = Math.floor(h / w);
+        p = Math.min(p, e.color.length - 1), p = Math.max(p, 0), u = e.color[p];
         break;
       }
     default:
@@ -9586,8 +9586,8 @@ function Ph(r, e = {}, t) {
       break;
     case "object":
       if (Array.isArray(e.legendColor)) {
-        let w = 100 / e.legendColor.length, b = Math.floor(h / w);
-        b = Math.min(b, e.legendColor.length - 1), b = Math.max(b, 0), c = e.legendColor[b];
+        let w = 100 / e.legendColor.length, p = Math.floor(h / w);
+        p = Math.min(p, e.legendColor.length - 1), p = Math.max(p, 0), c = e.legendColor[p];
       }
       break;
     default:
@@ -14965,7 +14965,7 @@ class ju extends ki {
   //////////////////////////////////////
   //full virtual render
   _virtualRenderFill(e, t, i) {
-    var s = this.tableElement, n = this.elementVertical, o = 0, a = 0, l = 0, h = 0, u = 0, d = 0, c = this.rows(), f = c.length, m = 0, v, w, b = [], k = 0, O = 0, _ = this.table.rowManager.fixedHeight, H = this.elementVertical.clientHeight, Y = this.table.options.rowHeight, pe = !0;
+    var s = this.tableElement, n = this.elementVertical, o = 0, a = 0, l = 0, h = 0, u = 0, d = 0, c = this.rows(), f = c.length, m = 0, v, w, p = [], T = 0, L = 0, _ = this.table.rowManager.fixedHeight, H = this.elementVertical.clientHeight, Y = this.table.options.rowHeight, pe = !0;
     if (e = e || 0, i = i || 0, !e)
       this.clear();
     else {
@@ -14973,20 +14973,20 @@ class ju extends ki {
       h = (f - e + 1) * this.vDomRowHeight, h < H && (e -= Math.ceil((H - h) / this.vDomRowHeight), e < 0 && (e = 0)), o = Math.min(Math.max(Math.floor(this.vDomWindowBuffer / this.vDomRowHeight), this.vDomWindowMinMarginRows), e), e -= o;
     }
     if (f && B.elVisible(this.elementVertical)) {
-      for (this.vDomTop = e, this.vDomBottom = e - 1, _ || this.table.options.maxHeight ? (Y && (O = H / Y + this.vDomWindowBuffer / Y), O = Math.max(this.vDomWindowMinTotalRows, Math.ceil(O))) : O = f; (O == f || a <= H + this.vDomWindowBuffer || k < this.vDomWindowMinTotalRows) && this.vDomBottom < f - 1; ) {
-        for (b = [], w = document.createDocumentFragment(), d = 0; d < O && this.vDomBottom < f - 1; )
-          m = this.vDomBottom + 1, v = c[m], this.styleRow(v, m), v.initialize(!1, !0), !v.heightInitialized && !this.table.options.rowHeight && v.clearCellHeight(), w.appendChild(v.getElement()), b.push(v), this.vDomBottom++, d++;
-        if (!b.length)
+      for (this.vDomTop = e, this.vDomBottom = e - 1, _ || this.table.options.maxHeight ? (Y && (L = H / Y + this.vDomWindowBuffer / Y), L = Math.max(this.vDomWindowMinTotalRows, Math.ceil(L))) : L = f; (L == f || a <= H + this.vDomWindowBuffer || T < this.vDomWindowMinTotalRows) && this.vDomBottom < f - 1; ) {
+        for (p = [], w = document.createDocumentFragment(), d = 0; d < L && this.vDomBottom < f - 1; )
+          m = this.vDomBottom + 1, v = c[m], this.styleRow(v, m), v.initialize(!1, !0), !v.heightInitialized && !this.table.options.rowHeight && v.clearCellHeight(), w.appendChild(v.getElement()), p.push(v), this.vDomBottom++, d++;
+        if (!p.length)
           break;
-        s.appendChild(w), b.forEach((S) => {
+        s.appendChild(w), p.forEach((S) => {
           S.rendered(), S.heightInitialized || S.calcHeight(!0);
-        }), b.forEach((S) => {
+        }), p.forEach((S) => {
           S.heightInitialized || S.setCellHeight();
-        }), b.forEach((S) => {
-          l = S.getHeight(), k < o ? u += l : a += l, l > this.vDomWindowBuffer && (this.vDomWindowBuffer = l * 2), k++;
-        }), pe = this.table.rowManager.adjustTableSize(), H = this.elementVertical.clientHeight, pe && (_ || this.table.options.maxHeight) && (Y = a / k, O = Math.max(this.vDomWindowMinTotalRows, Math.ceil(H / Y + this.vDomWindowBuffer / Y)));
+        }), p.forEach((S) => {
+          l = S.getHeight(), T < o ? u += l : a += l, l > this.vDomWindowBuffer && (this.vDomWindowBuffer = l * 2), T++;
+        }), pe = this.table.rowManager.adjustTableSize(), H = this.elementVertical.clientHeight, pe && (_ || this.table.options.maxHeight) && (Y = a / T, L = Math.max(this.vDomWindowMinTotalRows, Math.ceil(H / Y + this.vDomWindowBuffer / Y)));
       }
-      e ? (this.vDomTopPad = t ? this.vDomRowHeight * this.vDomTop + i : this.scrollTop - u, this.vDomBottomPad = this.vDomBottom == f - 1 ? 0 : Math.max(this.vDomScrollHeight - this.vDomTopPad - a - u, 0)) : (this.vDomTopPad = 0, this.vDomRowHeight = Math.floor((a + u) / k), this.vDomBottomPad = this.vDomRowHeight * (f - this.vDomBottom - 1), this.vDomScrollHeight = u + a + this.vDomBottomPad - H), s.style.paddingTop = this.vDomTopPad + "px", s.style.paddingBottom = this.vDomBottomPad + "px", t && (this.scrollTop = this.vDomTopPad + u + i - (this.elementVertical.scrollWidth > this.elementVertical.clientWidth ? this.elementVertical.offsetHeight - H : 0)), this.scrollTop = Math.min(this.scrollTop, this.elementVertical.scrollHeight - H), this.elementVertical.scrollWidth > this.elementVertical.clientWidth && t && (this.scrollTop += this.elementVertical.offsetHeight - H), this.vDomScrollPosTop = this.scrollTop, this.vDomScrollPosBottom = this.scrollTop, n.scrollTop = this.scrollTop, this.dispatch("render-virtual-fill");
+      e ? (this.vDomTopPad = t ? this.vDomRowHeight * this.vDomTop + i : this.scrollTop - u, this.vDomBottomPad = this.vDomBottom == f - 1 ? 0 : Math.max(this.vDomScrollHeight - this.vDomTopPad - a - u, 0)) : (this.vDomTopPad = 0, this.vDomRowHeight = Math.floor((a + u) / T), this.vDomBottomPad = this.vDomRowHeight * (f - this.vDomBottom - 1), this.vDomScrollHeight = u + a + this.vDomBottomPad - H), s.style.paddingTop = this.vDomTopPad + "px", s.style.paddingBottom = this.vDomBottomPad + "px", t && (this.scrollTop = this.vDomTopPad + u + i - (this.elementVertical.scrollWidth > this.elementVertical.clientWidth ? this.elementVertical.offsetHeight - H : 0)), this.scrollTop = Math.min(this.scrollTop, this.elementVertical.scrollHeight - H), this.elementVertical.scrollWidth > this.elementVertical.clientWidth && t && (this.scrollTop += this.elementVertical.offsetHeight - H), this.vDomScrollPosTop = this.scrollTop, this.vDomScrollPosBottom = this.scrollTop, n.scrollTop = this.scrollTop, this.dispatch("render-virtual-fill");
     }
   }
   _addTopRow(e, t) {
@@ -15872,28 +15872,28 @@ function td(r, e) {
     var v;
     return typeof m == "string" ? m.indexOf("%") > -1 ? v = t / 100 * parseInt(m) : v = parseInt(m) : v = m, v;
   }
-  function f(m, v, w, b) {
-    var k = [], O = 0, _ = 0, H = 0, Y = n, pe = 0, S = 0, W = [];
-    function U(L) {
-      return w * (L.column.definition.widthGrow || 1);
+  function f(m, v, w, p) {
+    var T = [], L = 0, _ = 0, H = 0, Y = n, pe = 0, S = 0, W = [];
+    function U(F) {
+      return w * (F.column.definition.widthGrow || 1);
     }
-    function ge(L) {
-      return c(L.width) - w * (L.column.definition.widthShrink || 0);
+    function ge(F) {
+      return c(F.width) - w * (F.column.definition.widthShrink || 0);
     }
-    return m.forEach(function(L, De) {
-      var Lt = b ? ge(L) : U(L);
-      L.column.minWidth >= Lt ? k.push(L) : L.column.maxWidth && L.column.maxWidth < Lt ? (L.width = L.column.maxWidth, v -= L.column.maxWidth, Y -= b ? L.column.definition.widthShrink || 1 : L.column.definition.widthGrow || 1, Y && (w = Math.floor(v / Y))) : (W.push(L), S += b ? L.column.definition.widthShrink || 1 : L.column.definition.widthGrow || 1);
-    }), k.length ? (k.forEach(function(L) {
-      O += b ? L.width - L.column.minWidth : L.column.minWidth, L.width = L.column.minWidth;
-    }), _ = v - O, H = S ? Math.floor(_ / S) : _, pe = f(W, _, H, b)) : (pe = S ? v - Math.floor(v / S) * S : v, W.forEach(function(L) {
-      L.width = b ? ge(L) : U(L);
+    return m.forEach(function(F, De) {
+      var Lt = p ? ge(F) : U(F);
+      F.column.minWidth >= Lt ? T.push(F) : F.column.maxWidth && F.column.maxWidth < Lt ? (F.width = F.column.maxWidth, v -= F.column.maxWidth, Y -= p ? F.column.definition.widthShrink || 1 : F.column.definition.widthGrow || 1, Y && (w = Math.floor(v / Y))) : (W.push(F), S += p ? F.column.definition.widthShrink || 1 : F.column.definition.widthGrow || 1);
+    }), T.length ? (T.forEach(function(F) {
+      L += p ? F.width - F.column.minWidth : F.column.minWidth, F.width = F.column.minWidth;
+    }), _ = v - L, H = S ? Math.floor(_ / S) : _, pe = f(W, _, H, p)) : (pe = S ? v - Math.floor(v / S) * S : v, W.forEach(function(F) {
+      F.width = p ? ge(F) : U(F);
     })), pe;
   }
   this.table.options.responsiveLayout && this.table.modExists("responsiveLayout", !0) && this.table.modules.responsiveLayout.update(), this.table.rowManager.element.scrollHeight > this.table.rowManager.element.clientHeight && (t -= this.table.rowManager.element.offsetWidth - this.table.rowManager.element.clientWidth), r.forEach(function(m) {
-    var v, w, b;
-    m.visible && (v = m.definition.width, w = parseInt(m.minWidth), v ? (b = c(v), i += b > w ? b : w, m.definition.widthShrink && (l.push({
+    var v, w, p;
+    m.visible && (v = m.definition.width, w = parseInt(m.minWidth), v ? (p = c(v), i += p > w ? p : w, m.definition.widthShrink && (l.push({
       column: m,
-      width: b > w ? b : w
+      width: p > w ? p : w
     }), h += m.definition.widthShrink)) : (a.push({
       column: m,
       width: 0
@@ -16573,16 +16573,16 @@ var ad = od, Gs = class {
     process.env.NODE_ENV !== "production" && y(this, Ke) && r !== y(this, Re) && console.error(
       "[timeoutManager]: Switching provider after calls to previous provider might result in unexpected behavior.",
       { previous: y(this, Re), provider: r }
-    ), F(this, Re, r), process.env.NODE_ENV !== "production" && F(this, Ke, !1);
+    ), O(this, Re, r), process.env.NODE_ENV !== "production" && O(this, Ke, !1);
   }
   setTimeout(r, e) {
-    return process.env.NODE_ENV !== "production" && F(this, Ke, !0), y(this, Re).setTimeout(r, e);
+    return process.env.NODE_ENV !== "production" && O(this, Ke, !0), y(this, Re).setTimeout(r, e);
   }
   clearTimeout(r) {
     y(this, Re).clearTimeout(r);
   }
   setInterval(r, e) {
-    return process.env.NODE_ENV !== "production" && F(this, Ke, !0), y(this, Re).setInterval(r, e);
+    return process.env.NODE_ENV !== "production" && O(this, Ke, !0), y(this, Re).setInterval(r, e);
   }
   clearInterval(r) {
     y(this, Re).clearInterval(r);
@@ -16677,7 +16677,7 @@ var Qe, Ve, vt, $n, md = ($n = class extends Gs {
     j(this, Qe);
     j(this, Ve);
     j(this, vt);
-    F(this, vt, (e) => {
+    O(this, vt, (e) => {
       if (!bi && window.addEventListener) {
         const t = () => e();
         return window.addEventListener("visibilitychange", t, !1), () => {
@@ -16691,16 +16691,16 @@ var Qe, Ve, vt, $n, md = ($n = class extends Gs {
   }
   onUnsubscribe() {
     var e;
-    this.hasListeners() || ((e = y(this, Ve)) == null || e.call(this), F(this, Ve, void 0));
+    this.hasListeners() || ((e = y(this, Ve)) == null || e.call(this), O(this, Ve, void 0));
   }
   setEventListener(e) {
     var t;
-    F(this, vt, e), (t = y(this, Ve)) == null || t.call(this), F(this, Ve, e((i) => {
+    O(this, vt, e), (t = y(this, Ve)) == null || t.call(this), O(this, Ve, e((i) => {
       typeof i == "boolean" ? this.setFocused(i) : this.onFocus();
     }));
   }
   setFocused(e) {
-    y(this, Qe) !== e && (F(this, Qe, e), this.onFocus());
+    y(this, Qe) !== e && (O(this, Qe, e), this.onFocus());
   }
   onFocus() {
     const e = this.isFocused();
@@ -16801,7 +16801,7 @@ var vd = bd(), wt, Be, yt, qn, wd = (qn = class extends Gs {
     j(this, wt, !0);
     j(this, Be);
     j(this, yt);
-    F(this, yt, (e) => {
+    O(this, yt, (e) => {
       if (!bi && window.addEventListener) {
         const t = () => e(!0), i = () => e(!1);
         return window.addEventListener("online", t, !1), window.addEventListener("offline", i, !1), () => {
@@ -16815,14 +16815,14 @@ var vd = bd(), wt, Be, yt, qn, wd = (qn = class extends Gs {
   }
   onUnsubscribe() {
     var e;
-    this.hasListeners() || ((e = y(this, Be)) == null || e.call(this), F(this, Be, void 0));
+    this.hasListeners() || ((e = y(this, Be)) == null || e.call(this), O(this, Be, void 0));
   }
   setEventListener(e) {
     var t;
-    F(this, yt, e), (t = y(this, Be)) == null || t.call(this), F(this, Be, e(this.setOnline.bind(this)));
+    O(this, yt, e), (t = y(this, Be)) == null || t.call(this), O(this, Be, e(this.setOnline.bind(this)));
   }
   setOnline(e) {
-    y(this, wt) !== e && (F(this, wt, e), this.listeners.forEach((i) => {
+    y(this, wt) !== e && (O(this, wt, e), this.listeners.forEach((i) => {
       i(e);
     }));
   }
@@ -16865,7 +16865,7 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
     j(this, it);
     j(this, je);
     j(this, Tt, /* @__PURE__ */ new Set());
-    this.options = t, F(this, ae, e), F(this, We, null), F(this, Me, Bn()), this.bindMethods(), this.setOptions(t);
+    this.options = t, O(this, ae, e), O(this, We, null), O(this, Me, Bn()), this.bindMethods(), this.setOptions(t);
   }
   bindMethods() {
     this.refetch = this.refetch.bind(this);
@@ -16916,7 +16916,7 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
   }
   getOptimisticResult(e) {
     const t = y(this, ae).getQueryCache().build(y(this, ae), e), i = this.createResult(t, e);
-    return kd(this, i) && (F(this, ne, i), F(this, Ct, this.options), F(this, et, y(this, z).state)), i;
+    return kd(this, i) && (O(this, ne, i), O(this, Ct, this.options), O(this, et, y(this, z).state)), i;
   }
   getCurrentResult() {
     return y(this, ne);
@@ -16956,18 +16956,18 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
     const i = y(this, z), s = this.options, n = y(this, ne), o = y(this, et), a = y(this, Ct), h = e !== i ? e.state : y(this, qt), { state: u } = e;
     let d = { ...u }, c = !1, f;
     if (t._optimisticResults) {
-      const U = this.hasListeners(), ge = !U && Wn(e, t), L = U && jn(e, i, t, s);
-      (ge || L) && (d = {
+      const U = this.hasListeners(), ge = !U && Wn(e, t), F = U && jn(e, i, t, s);
+      (ge || F) && (d = {
         ...d,
         ...Ed(u.data, e.options)
       }), t._optimisticResults === "isRestoring" && (d.fetchStatus = "idle");
     }
     let { error: m, errorUpdatedAt: v, status: w } = d;
     f = d.data;
-    let b = !1;
+    let p = !1;
     if (t.placeholderData !== void 0 && f === void 0 && w === "pending") {
       let U;
-      n != null && n.isPlaceholderData && t.placeholderData === (a == null ? void 0 : a.placeholderData) ? (U = n.data, b = !0) : U = typeof t.placeholderData == "function" ? t.placeholderData(
+      n != null && n.isPlaceholderData && t.placeholderData === (a == null ? void 0 : a.placeholderData) ? (U = n.data, p = !0) : U = typeof t.placeholderData == "function" ? t.placeholderData(
         (W = y(this, Rt)) == null ? void 0 : W.state.data,
         y(this, Rt)
       ) : t.placeholderData, U !== void 0 && (w = "success", f = _n(
@@ -16976,20 +16976,20 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
         t
       ), c = !0);
     }
-    if (t.select && f !== void 0 && !b)
+    if (t.select && f !== void 0 && !p)
       if (n && f === (o == null ? void 0 : o.data) && t.select === y(this, Zt))
         f = y(this, Et);
       else
         try {
-          F(this, Zt, t.select), f = t.select(f), f = _n(n == null ? void 0 : n.data, f, t), F(this, Et, f), F(this, We, null);
+          O(this, Zt, t.select), f = t.select(f), f = _n(n == null ? void 0 : n.data, f, t), O(this, Et, f), O(this, We, null);
         } catch (U) {
-          F(this, We, U);
+          O(this, We, U);
         }
     y(this, We) && (m = y(this, We), f = y(this, Et), v = Date.now(), w = "error");
-    const k = d.fetchStatus === "fetching", O = w === "pending", _ = w === "error", H = O && k, Y = f !== void 0, S = {
+    const T = d.fetchStatus === "fetching", L = w === "pending", _ = w === "error", H = L && T, Y = f !== void 0, S = {
       status: w,
       fetchStatus: d.fetchStatus,
-      isPending: O,
+      isPending: L,
       isSuccess: w === "success",
       isError: _,
       isInitialLoading: H,
@@ -17003,8 +17003,8 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
       errorUpdateCount: d.errorUpdateCount,
       isFetched: d.dataUpdateCount > 0 || d.errorUpdateCount > 0,
       isFetchedAfterMount: d.dataUpdateCount > h.dataUpdateCount || d.errorUpdateCount > h.errorUpdateCount,
-      isFetching: k,
-      isRefetching: k && !O,
+      isFetching: T,
+      isRefetching: T && !L,
       isLoadingError: _ && !Y,
       isPaused: d.fetchStatus === "paused",
       isPlaceholderData: c,
@@ -17018,18 +17018,18 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
       const U = (De) => {
         S.status === "error" ? De.reject(S.error) : S.data !== void 0 && De.resolve(S.data);
       }, ge = () => {
-        const De = F(this, Me, S.promise = Bn());
+        const De = O(this, Me, S.promise = Bn());
         U(De);
-      }, L = y(this, Me);
-      switch (L.status) {
+      }, F = y(this, Me);
+      switch (F.status) {
         case "pending":
-          e.queryHash === i.queryHash && U(L);
+          e.queryHash === i.queryHash && U(F);
           break;
         case "fulfilled":
-          (S.status === "error" || S.data !== L.value) && ge();
+          (S.status === "error" || S.data !== F.value) && ge();
           break;
         case "rejected":
-          (S.status !== "error" || S.error !== L.reason) && ge();
+          (S.status !== "error" || S.error !== F.reason) && ge();
           break;
       }
     }
@@ -17037,9 +17037,9 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
   }
   updateResult() {
     const e = y(this, ne), t = this.createResult(y(this, z), this.options);
-    if (F(this, et, y(this, z).state), F(this, Ct, this.options), y(this, et).data !== void 0 && F(this, Rt, y(this, z)), Ts(t, e))
+    if (O(this, et, y(this, z).state), O(this, Ct, this.options), y(this, et).data !== void 0 && O(this, Rt, y(this, z)), Ts(t, e))
       return;
-    F(this, ne, t);
+    O(this, ne, t);
     const i = () => {
       if (!e)
         return !0;
@@ -17075,27 +17075,27 @@ var ae, z, qt, ne, et, Ct, Me, We, Zt, Et, Rt, tt, it, je, Tt, N, Nt, ks, xs, Ms
   if (bi || y(this, ne).isStale || !An(e))
     return;
   const i = cd(y(this, ne).dataUpdatedAt, e) + 1;
-  F(this, tt, ai.setTimeout(() => {
+  O(this, tt, ai.setTimeout(() => {
     y(this, ne).isStale || this.updateResult();
   }, i));
 }, xs = function() {
   return (typeof this.options.refetchInterval == "function" ? this.options.refetchInterval(y(this, z)) : this.options.refetchInterval) ?? !1;
 }, Ms = function(e) {
-  J(this, N, Ls).call(this), F(this, je, e), !(bi || ye(this.options.enabled, y(this, z)) === !1 || !An(y(this, je)) || y(this, je) === 0) && F(this, it, ai.setInterval(() => {
+  J(this, N, Ls).call(this), O(this, je, e), !(bi || ye(this.options.enabled, y(this, z)) === !1 || !An(y(this, je)) || y(this, je) === 0) && O(this, it, ai.setInterval(() => {
     (this.options.refetchIntervalInBackground || pd.isFocused()) && J(this, N, Nt).call(this);
   }, y(this, je)));
 }, Ss = function() {
   J(this, N, ks).call(this), J(this, N, Ms).call(this, J(this, N, xs).call(this));
 }, Ds = function() {
-  y(this, tt) && (ai.clearTimeout(y(this, tt)), F(this, tt, void 0));
+  y(this, tt) && (ai.clearTimeout(y(this, tt)), O(this, tt, void 0));
 }, Ls = function() {
-  y(this, it) && (ai.clearInterval(y(this, it)), F(this, it, void 0));
+  y(this, it) && (ai.clearInterval(y(this, it)), O(this, it, void 0));
 }, Fs = function() {
   const e = y(this, ae).getQueryCache().build(y(this, ae), this.options);
   if (e === y(this, z))
     return;
   const t = y(this, z);
-  F(this, z, e), F(this, qt, e.state), this.hasListeners() && (t == null || t.removeObserver(this), e.addObserver(this));
+  O(this, z, e), O(this, qt, e.state), this.hasListeners() && (t == null || t.removeObserver(this), e.addObserver(this));
 }, Ro = function(e) {
   vd.batch(() => {
     e.listeners && this.listeners.forEach((t) => {
@@ -17226,15 +17226,15 @@ function Fd(r, e, t) {
       const w = () => {
         if (s.value.enabled !== !1) {
           n.setOptions(s.value);
-          const b = n.getOptimisticResult(
+          const p = n.getOptimisticResult(
             s.value
           );
-          b.isStale ? (v(), n.fetchOptimistic(s.value).then(f, (k) => {
+          p.isStale ? (v(), n.fetchOptimistic(s.value).then(f, (T) => {
             Vn(s.value.throwOnError, [
-              k,
+              T,
               n.getCurrentQuery()
-            ]) ? m(k) : f(n.getCurrentResult());
-          })) : (v(), f(b));
+            ]) ? m(T) : f(n.getCurrentResult());
+          })) : (v(), f(p));
         }
       };
       w(), v = Ge(s, w);
@@ -17339,9 +17339,10 @@ function Id(r, e) {
           "tradeMoney"
         `).eq("fetched_at", d);
       h.length > 0 ? (console.log("🔒 Applying access filter for accounts:", h), c = c.in("internal_account_id", h)) : console.log("🔓 No access filter applied - showing all trades"), c = c.order('"tradeDate"', { ascending: !1 });
-      const [f, m] = await Promise.all([
+      const [f, m, v] = await Promise.all([
         c,
-        t.schema("hf").from("user_accounts_master").select("internal_account_id, legal_entity")
+        t.schema("hf").from("user_accounts_master").select("internal_account_id, legal_entity"),
+        e ? t.schema("hf").from("user_account_alias").select("internal_account_id, alias").eq("user_id", e) : { data: [], error: null }
       ]);
       if (f.error)
         throw console.error("❌ Trades query error:", f.error), f.error;
@@ -17354,13 +17355,18 @@ function Id(r, e) {
         filtered: h.length > 0,
         accessibleAccounts: h.length > 0 ? h : "all"
       });
-      const v = new Map(
-        (m.data || []).map((w) => [w.internal_account_id, w.legal_entity])
+      const w = new Map(
+        (m.data || []).map((T) => [T.internal_account_id, T.legal_entity])
+      ), p = new Map(
+        (v.data || []).map((T) => [T.internal_account_id, T.alias])
       );
-      return (f.data || []).map((w) => ({
-        ...w,
-        legal_entity: v.get(w.internal_account_id) || void 0
-      }));
+      return (f.data || []).map((T) => {
+        let L = w.get(T.internal_account_id) || void 0;
+        return p.has(T.internal_account_id) && (L = p.get(T.internal_account_id)), {
+          ...T,
+          legal_entity: L
+        };
+      });
     },
     staleTime: 6e4
   }), o = t.channel(`trades:${r}`).on(
@@ -17408,34 +17414,34 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
     let h = null;
     const u = Le(!1), d = Le(!1), c = Le([]);
     let f = 0;
-    function m(g, p, R) {
-      const T = f++;
-      c.value.push({ id: T, type: g, title: p, message: R }), setTimeout(() => v(T), 5e3);
+    function m(b, g, R) {
+      const k = f++;
+      c.value.push({ id: k, type: b, title: g, message: R }), setTimeout(() => v(k), 5e3);
     }
-    function v(g) {
-      const p = c.value.findIndex((R) => R.id === g);
-      p !== -1 && c.value.splice(p, 1);
+    function v(b) {
+      const g = c.value.findIndex((R) => R.id === b);
+      g !== -1 && c.value.splice(g, 1);
     }
-    function w(g) {
-      if (!g)
+    function w(b) {
+      if (!b)
         return "⏱️ Last Updated: Not available";
       try {
-        const p = new Date(g), R = Intl.DateTimeFormat().resolvedOptions().timeZone, G = {
+        const g = new Date(b), R = Intl.DateTimeFormat().resolvedOptions().timeZone, G = {
           "Asia/Kolkata": "IST",
           "Asia/Calcutta": "IST",
-          "America/New_York": p.getMonth() >= 2 && p.getMonth() < 10 ? "EDT" : "EST",
-          "America/Los_Angeles": p.getMonth() >= 2 && p.getMonth() < 10 ? "PDT" : "PST",
-          "America/Chicago": p.getMonth() >= 2 && p.getMonth() < 10 ? "CDT" : "CST",
-          "America/Denver": p.getMonth() >= 2 && p.getMonth() < 10 ? "MDT" : "MST",
-          "Europe/London": p.getMonth() >= 2 && p.getMonth() < 9 ? "BST" : "GMT",
-          "Europe/Paris": p.getMonth() >= 2 && p.getMonth() < 9 ? "CEST" : "CET",
-          "Australia/Sydney": p.getMonth() >= 9 || p.getMonth() < 3 ? "AEDT" : "AEST"
-        }[R] || R, K = p.toLocaleDateString("en-US", {
+          "America/New_York": g.getMonth() >= 2 && g.getMonth() < 10 ? "EDT" : "EST",
+          "America/Los_Angeles": g.getMonth() >= 2 && g.getMonth() < 10 ? "PDT" : "PST",
+          "America/Chicago": g.getMonth() >= 2 && g.getMonth() < 10 ? "CDT" : "CST",
+          "America/Denver": g.getMonth() >= 2 && g.getMonth() < 10 ? "MDT" : "MST",
+          "Europe/London": g.getMonth() >= 2 && g.getMonth() < 9 ? "BST" : "GMT",
+          "Europe/Paris": g.getMonth() >= 2 && g.getMonth() < 9 ? "CEST" : "CET",
+          "Australia/Sydney": g.getMonth() >= 9 || g.getMonth() < 3 ? "AEDT" : "AEST"
+        }[R] || R, K = g.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
           year: "numeric",
           timeZone: R
-        }), $ = p.toLocaleTimeString("en-US", {
+        }), $ = g.toLocaleTimeString("en-US", {
           hour: "2-digit",
           minute: "2-digit",
           second: "2-digit",
@@ -17444,15 +17450,15 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         });
         return `⏱️ Last Updated: ${K} at ${$} ${G}`;
       } catch {
-        return `⏱️ Last Updated: ${g}`;
+        return `⏱️ Last Updated: ${b}`;
       }
     }
-    function b() {
+    function p() {
       return [
         {
-          label: (g) => {
-            const p = g.getData();
-            return w(p.fetched_at);
+          label: (b) => {
+            const g = b.getData();
+            return w(g.fetched_at);
           },
           action: () => {
           },
@@ -17463,9 +17469,9 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         },
         {
           label: "📋 Copy timestamp to clipboard",
-          action: (g, p) => {
-            const T = p.getData().fetched_at;
-            T ? navigator.clipboard.writeText(T).then(() => {
+          action: (b, g) => {
+            const k = g.getData().fetched_at;
+            k ? navigator.clipboard.writeText(k).then(() => {
               m("success", "Copied!", "Timestamp copied to clipboard");
             }).catch((G) => {
               console.error("Failed to copy:", G), m("error", "Copy Failed", "Could not copy timestamp");
@@ -17474,32 +17480,32 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         }
       ];
     }
-    function k(g) {
+    function T(b) {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-      }).format(g);
+      }).format(b);
     }
-    function O(g) {
-      if (!g) return null;
-      const p = String(g).trim(), R = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(p);
+    function L(b) {
+      if (!b) return null;
+      const g = String(b).trim(), R = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(g);
       if (R) {
         let G = Number(R[1]), K = Number(R[2]) - 1, $ = Number(R[3]);
         $ < 100 && ($ += 2e3);
         const Ft = new Date($, K, G);
         return isNaN(Ft.getTime()) ? null : Ft.getTime();
       }
-      const T = new Date(p);
-      return isNaN(T.getTime()) ? null : T.getTime();
+      const k = new Date(g);
+      return isNaN(k.getTime()) ? null : k.getTime();
     }
-    function _(g) {
-      return new Intl.NumberFormat("en-US").format(g);
+    function _(b) {
+      return new Intl.NumberFormat("en-US").format(b);
     }
-    function H(g, p) {
-      if (g === "legal_entity") {
-        if (S.value === p) {
+    function H(b, g) {
+      if (b === "legal_entity") {
+        if (S.value === g) {
           S.value = null;
           const R = new URL(window.location.href);
           R.searchParams.delete("all_cts_clientId"), window.history.replaceState({}, "", R.toString()), s && s.emit("account-filter-changed", {
@@ -17507,121 +17513,121 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
             source: "trades"
           });
         } else {
-          S.value = p;
+          S.value = g;
           const R = new URL(window.location.href);
-          R.searchParams.set("all_cts_clientId", p), window.history.replaceState({}, "", R.toString()), s && s.emit("account-filter-changed", {
-            accountId: p,
+          R.searchParams.set("all_cts_clientId", g), window.history.replaceState({}, "", R.toString()), s && s.emit("account-filter-changed", {
+            accountId: g,
             source: "trades"
           });
         }
         W();
-      } else if (g === "symbol") {
-        const R = o.value.indexOf(p);
-        R > -1 ? o.value.splice(R, 1) : o.value.push(p);
-        const T = new URL(window.location.href);
-        o.value.length > 0 ? T.searchParams.set("all_cts_fi", o.value.join(",")) : T.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", T.toString()), s && s.emit("symbol-filter-changed", {
+      } else if (b === "symbol") {
+        const R = o.value.indexOf(g);
+        R > -1 ? o.value.splice(R, 1) : o.value.push(g);
+        const k = new URL(window.location.href);
+        o.value.length > 0 ? k.searchParams.set("all_cts_fi", o.value.join(",")) : k.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", k.toString()), s && s.emit("symbol-filter-changed", {
           symbolTags: o.value,
           source: "trades"
         }), W();
       }
     }
-    function Y(g) {
+    function Y(b) {
       var Ys;
-      if (!g) return [];
-      const p = String(g).trim(), R = p.match(/^([A-Z]+)\s*/), T = (R == null ? void 0 : R[1]) ?? "", G = p.slice(((Ys = R == null ? void 0 : R[0]) == null ? void 0 : Ys.length) || 0), K = G.match(/(\d{6})([CP])/);
+      if (!b) return [];
+      const g = String(b).trim(), R = g.match(/^([A-Z]+)\s*/), k = (R == null ? void 0 : R[1]) ?? "", G = g.slice(((Ys = R == null ? void 0 : R[0]) == null ? void 0 : Ys.length) || 0), K = G.match(/(\d{6})([CP])/);
       let $ = "", Ft = "", Zs = "";
       if (K) {
         $ = pe(K[1]), Ft = K[2];
         const Js = G.slice(K[0].length).match(/(\d+)/);
         Js && (Zs = (parseInt(Js[1], 10) / 1e3).toString());
       }
-      return [T, $, Zs, Ft].filter(Boolean);
+      return [k, $, Zs, Ft].filter(Boolean);
     }
-    function pe(g) {
-      if (!g || g.length !== 6) return "";
-      const p = g.substring(0, 2), R = g.substring(2, 4), T = g.substring(4, 6);
-      return `20${p}-${R}-${T}`;
+    function pe(b) {
+      if (!b || b.length !== 6) return "";
+      const g = b.substring(0, 2), R = b.substring(2, 4), k = b.substring(4, 6);
+      return `20${g}-${R}-${k}`;
     }
     const S = Le(null);
     function W() {
       if (!(!h || !u.value))
         try {
-          h.clearFilter(!0), h.setFilter((g) => {
-            if (!g || S.value && (typeof g.legal_entity == "object" && g.legal_entity !== null ? g.legal_entity.name || g.legal_entity.id : g.legal_entity) !== S.value)
+          h.clearFilter(!0), h.setFilter((b) => {
+            if (!b || S.value && (typeof b.legal_entity == "object" && b.legal_entity !== null ? b.legal_entity.name || b.legal_entity.id : b.legal_entity) !== S.value)
               return !1;
             if (o.value.length > 0) {
-              const p = Y(g.symbol || "");
-              if (!o.value.every((T) => p.includes(T))) return !1;
+              const g = Y(b.symbol || "");
+              if (!o.value.every((k) => g.includes(k))) return !1;
             }
             return !0;
           }), U(), ei(() => {
             h && h.redraw();
           });
-        } catch (g) {
-          console.warn("Error in updateFilters:", g);
+        } catch (b) {
+          console.warn("Error in updateFilters:", b);
         }
     }
     function U() {
-      var p;
-      const g = [];
-      S.value && g.push({ field: "legal_entity", value: S.value }), o.value.length > 0 && o.value.forEach((R) => {
-        g.push({ field: "symbol", value: R });
-      }), n.value = g, h && u.value ? rt.value = h.getDataCount("active") || 0 : rt.value = ((p = a.data.value) == null ? void 0 : p.length) || 0;
+      var g;
+      const b = [];
+      S.value && b.push({ field: "legal_entity", value: S.value }), o.value.length > 0 && o.value.forEach((R) => {
+        b.push({ field: "symbol", value: R });
+      }), n.value = b, h && u.value ? rt.value = h.getDataCount("active") || 0 : rt.value = ((g = a.data.value) == null ? void 0 : g.length) || 0;
     }
-    function ge(g) {
-      if (g === "legal_entity") {
+    function ge(b) {
+      if (b === "legal_entity") {
         S.value = null;
-        const p = new URL(window.location.href);
-        p.searchParams.delete("all_cts_clientId"), window.history.replaceState({}, "", p.toString()), s && s.emit("account-filter-changed", {
+        const g = new URL(window.location.href);
+        g.searchParams.delete("all_cts_clientId"), window.history.replaceState({}, "", g.toString()), s && s.emit("account-filter-changed", {
           accountId: null,
           source: "trades"
         });
-      } else if (g === "symbol") {
+      } else if (b === "symbol") {
         o.value = [];
-        const p = new URL(window.location.href);
-        p.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", p.toString());
+        const g = new URL(window.location.href);
+        g.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", g.toString());
       }
       W();
     }
-    function L() {
+    function F() {
       S.value = null, o.value = [];
-      const g = new URL(window.location.href);
-      g.searchParams.delete("all_cts_clientId"), g.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", g.toString()), s && s.emit("account-filter-changed", {
+      const b = new URL(window.location.href);
+      b.searchParams.delete("all_cts_clientId"), b.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", b.toString()), s && s.emit("account-filter-changed", {
         accountId: null,
         source: "trades"
       }), W();
     }
     function De() {
-      const g = new URL(window.location.href), p = g.searchParams.get("all_cts_clientId") || void 0, R = g.searchParams.get("all_cts_fi") || void 0, T = R ? R.split(",").filter(Boolean) : void 0;
-      return { legal_entity: p, symbol: T };
+      const b = new URL(window.location.href), g = b.searchParams.get("all_cts_clientId") || void 0, R = b.searchParams.get("all_cts_fi") || void 0, k = R ? R.split(",").filter(Boolean) : void 0;
+      return { legal_entity: g, symbol: k };
     }
-    function Lt(g) {
-      if (console.log("📍 [Trades] Received account filter:", g), g.source === "trades") return;
-      S.value = g.accountId;
-      const p = new URL(window.location.href);
-      g.accountId ? p.searchParams.set("all_cts_clientId", g.accountId) : p.searchParams.delete("all_cts_clientId"), window.history.replaceState({}, "", p.toString()), W();
+    function Lt(b) {
+      if (console.log("📍 [Trades] Received account filter:", b), b.source === "trades") return;
+      S.value = b.accountId;
+      const g = new URL(window.location.href);
+      b.accountId ? g.searchParams.set("all_cts_clientId", b.accountId) : g.searchParams.delete("all_cts_clientId"), window.history.replaceState({}, "", g.toString()), W();
     }
-    function $s(g) {
-      if (console.log("📍 [Trades] Received symbol filter:", g), g.source === "trades") return;
-      o.value = g.symbolTags;
-      const p = new URL(window.location.href);
-      g.symbolTags.length > 0 ? p.searchParams.set("all_cts_fi", g.symbolTags.join(",")) : p.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", p.toString()), W();
+    function $s(b) {
+      if (console.log("📍 [Trades] Received symbol filter:", b), b.source === "trades") return;
+      o.value = b.symbolTags;
+      const g = new URL(window.location.href);
+      b.symbolTags.length > 0 ? g.searchParams.set("all_cts_fi", b.symbolTags.join(",")) : g.searchParams.delete("all_cts_fi"), window.history.replaceState({}, "", g.toString()), W();
     }
     No(async () => {
-      const g = De();
-      g.legal_entity && (S.value = g.legal_entity), g.symbol && (o.value = g.symbol), a.isSuccess.value && l.value && !d.value && (await ei(), qs(), d.value = !0), W(), s && (s.on("account-filter-changed", Lt), s.on("symbol-filter-changed", $s));
+      const b = De();
+      b.legal_entity && (S.value = b.legal_entity), b.symbol && (o.value = b.symbol), a.isSuccess.value && l.value && !d.value && (await ei(), qs(), d.value = !0), W(), s && (s.on("account-filter-changed", Lt), s.on("symbol-filter-changed", $s));
     }), Ks(() => {
-      var g;
+      var b;
       if (h)
         try {
           h.destroy();
-        } catch (p) {
-          console.warn("Error destroying tabulator:", p);
+        } catch (g) {
+          console.warn("Error destroying tabulator:", g);
         }
-      s && (s.off("account-filter-changed", Lt), s.off("symbol-filter-changed", $s)), (g = a._cleanup) == null || g.call(a);
+      s && (s.off("account-filter-changed", Lt), s.off("symbol-filter-changed", $s)), (b = a._cleanup) == null || b.call(a);
     }), window.addEventListener("popstate", () => {
-      const g = De();
-      S.value = g.legal_entity || null, o.value = g.symbol || [], W();
+      const b = De();
+      S.value = b.legal_entity || null, o.value = b.symbol || [], W();
     }), Ge(S, () => {
       h && u.value && W();
     }), Ge(o, () => {
@@ -17646,15 +17652,15 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         frozen: !0,
         sorter: "string",
-        formatter: (g) => {
-          const p = g.getValue();
-          return typeof p == "object" && p !== null ? p.name || p.id || "" : p ? `<span style="font-weight: 500;">${p}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>';
+        formatter: (b) => {
+          const g = b.getValue();
+          return typeof g == "object" && g !== null ? g.name || g.id || "" : g ? `<span style="font-weight: 500;">${g}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>';
         },
-        cellClick: (g, p) => {
-          const R = p.getValue(), T = typeof R == "object" && R !== null ? R.name || R.id : R;
-          H("legal_entity", T);
+        cellClick: (b, g) => {
+          const R = g.getValue(), k = typeof R == "object" && R !== null ? R.name || R.id : R;
+          H("legal_entity", k);
         },
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Financial Instrument",
@@ -17662,49 +17668,49 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         frozen: !0,
         sorter: "string",
-        formatter: (g) => {
-          const p = g.getValue();
-          if (!p) return '<span style="color: #6c757d; font-style: italic;">N/A</span>';
-          const R = Y(p), T = o.value;
-          return R.map((G) => `<span class="fi-tag ${T.includes(G) ? "fi-tag-selected" : ""}" data-tag="${G}">${G}</span>`).join(" ");
+        formatter: (b) => {
+          const g = b.getValue();
+          if (!g) return '<span style="color: #6c757d; font-style: italic;">N/A</span>';
+          const R = Y(g), k = o.value;
+          return R.map((G) => `<span class="fi-tag ${k.includes(G) ? "fi-tag-selected" : ""}" data-tag="${G}">${G}</span>`).join(" ");
         },
-        cellClick: (g, p) => {
-          const R = g.target;
+        cellClick: (b, g) => {
+          const R = b.target;
           if (R.classList.contains("fi-tag")) {
-            const T = R.getAttribute("data-tag");
-            T && H("symbol", T);
+            const k = R.getAttribute("data-tag");
+            k && H("symbol", k);
           }
         },
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Side",
         field: "buySell",
         minWidth: 80,
         sorter: "string",
-        formatter: (g) => {
-          const p = g.getValue();
-          return p === "BUY" ? '<span style="color: #28a745; font-weight: bold;">BUY</span>' : p === "SELL" ? '<span style="color: #dc3545; font-weight: bold;">SELL</span>' : p;
+        formatter: (b) => {
+          const g = b.getValue();
+          return g === "BUY" ? '<span style="color: #28a745; font-weight: bold;">BUY</span>' : g === "SELL" ? '<span style="color: #dc3545; font-weight: bold;">SELL</span>' : g;
         },
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Open / Close",
         field: "openCloseIndicator",
         minWidth: 100,
         sorter: "string",
-        formatter: (g) => {
-          const p = g.getValue();
-          return p === "O" ? '<span style="color: #17a2b8; font-weight: bold;">OPEN</span>' : p === "C" ? '<span style="color: #6f42c1; font-weight: bold;">CLOSE</span>' : p;
+        formatter: (b) => {
+          const g = b.getValue();
+          return g === "O" ? '<span style="color: #17a2b8; font-weight: bold;">OPEN</span>' : g === "C" ? '<span style="color: #6f42c1; font-weight: bold;">CLOSE</span>' : g;
         },
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Asset Class",
         field: "assetCategory",
         minWidth: 120,
         sorter: "string",
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Trade Date",
@@ -17712,23 +17718,23 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         sorter: "date",
         // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
-        sorterFunc: (g, p, R, T, G) => {
-          const K = O(T.getData().tradeDate) || 0, $ = O(G.getData().tradeDate) || 0;
+        sorterFunc: (b, g, R, k, G) => {
+          const K = L(k.getData().tradeDate) || 0, $ = L(G.getData().tradeDate) || 0;
           return K - $;
         },
-        formatter: (g) => {
-          const p = g.getValue();
-          if (!p) return "";
-          const R = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(p).trim());
-          let T;
+        formatter: (b) => {
+          const g = b.getValue();
+          if (!g) return "";
+          const R = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(g).trim());
+          let k;
           if (R) {
             const G = Number(R[1]), K = Number(R[2]) - 1;
             let $ = Number(R[3]);
-            $ < 100 && ($ += 2e3), T = new Date($, K, G);
-          } else if (T = new Date(p), isNaN(T.getTime())) return String(p);
-          return T.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            $ < 100 && ($ += 2e3), k = new Date($, K, G);
+          } else if (k = new Date(g), isNaN(k.getTime())) return String(g);
+          return k.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         },
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Settlement Date Target",
@@ -17736,23 +17742,23 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 140,
         sorter: "date",
         // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
-        sorterFunc: (g, p, R, T, G) => {
-          const K = O(T.getData().tradeDate) || 0, $ = O(G.getData().tradeDate) || 0;
+        sorterFunc: (b, g, R, k, G) => {
+          const K = L(k.getData().tradeDate) || 0, $ = L(G.getData().tradeDate) || 0;
           return K - $;
         },
-        formatter: (g) => {
-          const p = g.getValue();
-          if (!p) return "";
-          const R = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(p).trim());
-          let T;
+        formatter: (b) => {
+          const g = b.getValue();
+          if (!g) return "";
+          const R = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(g).trim());
+          let k;
           if (R) {
             const G = Number(R[1]), K = Number(R[2]) - 1;
             let $ = Number(R[3]);
-            $ < 100 && ($ += 2e3), T = new Date($, K, G);
-          } else if (T = new Date(p), isNaN(T.getTime())) return String(p);
-          return T.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            $ < 100 && ($ += 2e3), k = new Date($, K, G);
+          } else if (k = new Date(g), isNaN(k.getTime())) return String(g);
+          return k.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         },
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Quantity",
@@ -17761,8 +17767,8 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         hozAlign: "right",
         sorter: "number",
         // remove mutator (was hiding raw values) and compute in formatter
-        formatter: (g) => {
-          const p = g.getRow().getData(), R = (p == null ? void 0 : p.quantity) ?? "", T = (p == null ? void 0 : p.multiplier) ?? "", G = parseFloat(R) || 0, K = parseFloat(T) || 1, $ = G * K;
+        formatter: (b) => {
+          const g = b.getRow().getData(), R = (g == null ? void 0 : g.quantity) ?? "", k = (g == null ? void 0 : g.multiplier) ?? "", G = parseFloat(R) || 0, K = parseFloat(k) || 1, $ = G * K;
           return _($);
         },
         // custom bottomCalc: sum of quantity * multiplier across visible rows
@@ -17774,7 +17780,7 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
           }, 0)
         },
         bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue() || 0), */
-        contextMenu: b()
+        contextMenu: p()
       },
       {
         title: "Price",
@@ -17782,8 +17788,8 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         hozAlign: "right",
         sorter: "number",
-        formatter: (g) => k(parseFloat(g.getValue()) || 0),
-        contextMenu: b()
+        formatter: (b) => T(parseFloat(b.getValue()) || 0),
+        contextMenu: p()
       },
       {
         title: "Total Premium",
@@ -17791,8 +17797,8 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         hozAlign: "right",
         sorter: "number",
-        formatter: (g) => k(parseFloat(g.getValue()) || 0),
-        contextMenu: b()
+        formatter: (b) => T(parseFloat(b.getValue()) || 0),
+        contextMenu: p()
       },
       {
         title: "Net Cash",
@@ -17800,8 +17806,8 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         hozAlign: "right",
         sorter: "number",
-        formatter: (g) => k(parseFloat(g.getValue()) || 0),
-        contextMenu: b()
+        formatter: (b) => T(parseFloat(b.getValue()) || 0),
+        contextMenu: p()
       },
       {
         title: "MTM PnL",
@@ -17809,8 +17815,8 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 80,
         hozAlign: "right",
         sorter: "number",
-        formatter: (g) => k(parseFloat(g.getValue()) || 0),
-        contextMenu: b()
+        formatter: (b) => T(parseFloat(b.getValue()) || 0),
+        contextMenu: p()
       },
       {
         title: "FIFO Realized",
@@ -17819,14 +17825,14 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         hozAlign: "right",
         sorter: "number",
         // ensure Tabulator sees a numeric value (DB stores text)
-        mutator: (g) => {
-          const p = parseFloat(g);
-          return isNaN(p) ? 0 : p;
+        mutator: (b) => {
+          const g = parseFloat(b);
+          return isNaN(g) ? 0 : g;
         },
-        formatter: (g) => `<span style="font-weight: 600;">${k(parseFloat(g.getValue()) || 0)}</span>`,
+        formatter: (b) => `<span style="font-weight: 600;">${T(parseFloat(b.getValue()) || 0)}</span>`,
         bottomCalc: "sum",
-        bottomCalcFormatter: (g) => k(g.getValue() || 0),
-        contextMenu: b()
+        bottomCalcFormatter: (b) => T(b.getValue() || 0),
+        contextMenu: p()
       },
       {
         title: "Commission",
@@ -17834,10 +17840,10 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         hozAlign: "right",
         sorter: "number",
-        formatter: (g) => `<span style="color: #dc3545; font-weight: 600;">${k(parseFloat(g.getValue()) || 0)}</span>`,
+        formatter: (b) => `<span style="color: #dc3545; font-weight: 600;">${T(parseFloat(b.getValue()) || 0)}</span>`,
         bottomCalc: "sum",
-        bottomCalcFormatter: (g) => k(g.getValue()),
-        contextMenu: b()
+        bottomCalcFormatter: (b) => T(b.getValue()),
+        contextMenu: p()
       },
       {
         title: "Close Price",
@@ -17845,8 +17851,8 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         minWidth: 120,
         hozAlign: "right",
         sorter: "number",
-        formatter: (g) => k(parseFloat(g.getValue()) || 0),
-        contextMenu: b()
+        formatter: (b) => T(parseFloat(b.getValue()) || 0),
+        contextMenu: p()
       }
     ]);
     function qs() {
@@ -17859,7 +17865,7 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         h = null;
       }
       u.value = !1;
-      const g = {
+      const b = {
         data: a.data.value || [],
         columns: ko.value,
         layout: "fitColumns",
@@ -17867,65 +17873,65 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
         height: "60vh",
         placeholder: "No trades available",
         virtualDom: !1,
-        rowClick: (p, R) => {
-          const T = R.getData();
-          i("row-click", T), t.onRowClick && t.onRowClick(T);
+        rowClick: (g, R) => {
+          const k = R.getData();
+          i("row-click", k), t.onRowClick && t.onRowClick(k);
         }
       };
       try {
-        h = new ad(l.value, g), h.on("tableBuilt", function() {
+        h = new ad(l.value, b), h.on("tableBuilt", function() {
           u.value = !0, W(), h && (rt.value = h.getDataCount("active") || 0);
         });
-      } catch (p) {
-        console.error("Error creating Tabulator:", p);
+      } catch (g) {
+        console.error("Error creating Tabulator:", g);
       }
     }
-    Ge([() => a.isSuccess.value, l], async ([g, p]) => {
+    Ge([() => a.isSuccess.value, l], async ([b, g]) => {
       var R;
-      g && p && !d.value && (await ei(), qs(), d.value = !0, rt.value = ((R = a.data.value) == null ? void 0 : R.length) || 0);
-    }, { immediate: !0 }), Ge(() => a.data.value, async (g) => {
-      if (!(!h || !g))
+      b && g && !d.value && (await ei(), qs(), d.value = !0, rt.value = ((R = a.data.value) == null ? void 0 : R.length) || 0);
+    }, { immediate: !0 }), Ge(() => a.data.value, async (b) => {
+      if (!(!h || !b))
         try {
-          h.replaceData(g), ei(() => {
+          h.replaceData(b), ei(() => {
             W(), h && (rt.value = h.getDataCount("active") || 0);
           });
-        } catch (p) {
-          console.warn("Error updating table data:", p);
+        } catch (g) {
+          console.warn("Error updating table data:", g);
         }
     }, { deep: !0 });
     function xo() {
       i("minimize");
     }
     return Ks(() => {
-      var g;
+      var b;
       if (h)
         try {
           h.destroy();
-        } catch (p) {
-          console.warn("Error destroying tabulator:", p);
+        } catch (g) {
+          console.warn("Error destroying tabulator:", g);
         }
-      (g = a._cleanup) == null || g.call(a);
-    }), (g, p) => {
+      (b = a._cleanup) == null || b.call(a);
+    }), (b, g) => {
       const R = _o("router-link");
       return le(), de("div", Nd, [
         ee("div", _d, [
-          (le(!0), de(Qs, null, en(c.value, (T) => (le(), de("div", {
-            key: T.id,
-            class: Vo(["toast", `toast-${T.type}`])
+          (le(!0), de(Qs, null, en(c.value, (k) => (le(), de("div", {
+            key: k.id,
+            class: Vo(["toast", `toast-${k.type}`])
           }, [
-            ee("strong", null, ot(T.title), 1),
-            T.message ? (le(), de("span", Vd, ot(T.message), 1)) : ti("", !0),
+            ee("strong", null, ot(k.title), 1),
+            k.message ? (le(), de("span", Vd, ot(k.message), 1)) : ti("", !0),
             ee("button", {
-              onClick: (G) => v(T.id),
+              onClick: (G) => v(k.id),
               class: "toast-close"
             }, "×", 8, Bd)
           ], 2))), 128))
         ]),
-        Ht(a).isLoading.value ? (le(), de("div", Wd, [...p[0] || (p[0] = [
+        Ht(a).isLoading.value ? (le(), de("div", Wd, [...g[0] || (g[0] = [
           ee("div", { class: "loading-spinner" }, null, -1),
           Mi(" Loading trades... ", -1)
         ])])) : Ht(a).isError.value ? (le(), de("div", jd, [
-          p[1] || (p[1] = ee("h3", null, "Error loading trades", -1)),
+          g[1] || (g[1] = ee("h3", null, "Error loading trades", -1)),
           ee("p", null, ot(Ht(a).error.value), 1)
         ])) : Ht(a).isSuccess.value ? (le(), de("div", Gd, [
           ee("div", Ud, [
@@ -17934,7 +17940,7 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
                 key: 0,
                 to: "/trades"
               }, {
-                default: Wo(() => [...p[2] || (p[2] = [
+                default: Wo(() => [...g[2] || (g[2] = [
                   Mi("Trades:", -1)
                 ])]),
                 _: 1
@@ -17951,22 +17957,22 @@ const Nd = { class: "trades-card" }, _d = { class: "toast-container" }, Vd = { k
             ])
           ]),
           n.value.length ? (le(), de("div", Yd, [
-            p[3] || (p[3] = ee("span", { class: "filters-label" }, "Filtered by:", -1)),
+            g[3] || (g[3] = ee("span", { class: "filters-label" }, "Filtered by:", -1)),
             ee("div", Jd, [
-              (le(!0), de(Qs, null, en(n.value, (T) => (le(), de("span", {
-                key: `${T.field}-${T.value}`,
+              (le(!0), de(Qs, null, en(n.value, (k) => (le(), de("span", {
+                key: `${k.field}-${k.value}`,
                 class: "filter-tag"
               }, [
-                ee("strong", null, ot(T.field === "legal_entity" ? "Account" : T.field === "symbol" ? "Symbol" : "Unknown") + ":", 1),
-                Mi(" " + ot(T.value) + " ", 1),
+                ee("strong", null, ot(k.field === "legal_entity" ? "Account" : k.field === "symbol" ? "Symbol" : "Unknown") + ":", 1),
+                Mi(" " + ot(k.value) + " ", 1),
                 ee("button", {
                   class: "tag-clear",
-                  onClick: (G) => ge(T.field)
+                  onClick: (G) => ge(k.field)
                 }, "✕", 8, Xd)
               ]))), 128)),
               ee("button", {
                 class: "btn-clear-all",
-                onClick: L
+                onClick: F
               }, "Clear all")
             ])
           ])) : ti("", !0),
