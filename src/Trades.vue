@@ -22,8 +22,11 @@ const emit = defineEmits<{
 const eventBus = inject<any>('eventBus')
 
 // Active filters
-type ActiveFilter = { field: 'legal_entity'; value: string }
+type ActiveFilter = { field: 'symbol' | 'legal_entity'; value: string }
 const activeFilters = ref<ActiveFilter[]>([])
+
+// Symbol filters
+const symbolTagFilters = ref<string[]>([])
 
 // Query trades data with realtime updates
 const q = useTradesQuery(props.accountId, props.userId)
@@ -175,24 +178,96 @@ function formatNumber(value: number): string {
 }
 
 // Filter handlers
-function handleCellFilterClick(field: 'legal_entity', value: any) {
+function handleCellFilterClick(field: 'legal_entity' | 'symbol', value: string) {
   if (field === 'legal_entity') {
-    const accountId = String(value)
-    const url = new URL(window.location.href)
-    url.searchParams.set('all_cts_clientId', accountId)
-    window.history.replaceState({}, '', url.toString())
-
-    if (eventBus) {
-      eventBus.emit('account-filter-changed', {
-        accountId,
-        source: 'trades'
-      })
+    // Toggle account filter
+    if (accountFilter.value === value) {
+      accountFilter.value = null
+      const url = new URL(window.location.href)
+      url.searchParams.delete('all_cts_clientId')
+      window.history.replaceState({}, '', url.toString())
+      // Emit event to other components
+      if (eventBus) {
+        eventBus.emit('account-filter-changed', {
+          accountId: null,
+          source: 'trades'
+        })
+      }
+    } else {
+      accountFilter.value = value
+      const url = new URL(window.location.href)
+      url.searchParams.set('all_cts_clientId', value)
+      window.history.replaceState({}, '', url.toString())
+      // Emit event to other components
+      if (eventBus) {
+        eventBus.emit('account-filter-changed', {
+          accountId: value,
+          source: 'trades'
+        })
+      }
     }
-    
-    // Dispatch popstate to trigger URL-based watchers
-    window.dispatchEvent(new PopStateEvent('popstate'))
-    return
+    updateFilters()
+  } else if (field === 'symbol') {
+    // Toggle symbol tag filter
+    const index = symbolTagFilters.value.indexOf(value)
+    if (index > -1) {
+      symbolTagFilters.value.splice(index, 1)
+    } else {
+      symbolTagFilters.value.push(value)
+    }
+    // Update URL
+    const url = new URL(window.location.href)
+    if (symbolTagFilters.value.length > 0) {
+      url.searchParams.set('all_cts_fi', symbolTagFilters.value.join(','))
+    } else {
+      url.searchParams.delete('all_cts_fi')
+    }
+    window.history.replaceState({}, '', url.toString())
+    updateFilters()
   }
+}
+
+// Extract tags from symbol
+function extractTagsFromSymbol(symbolText: string): string[] {
+  if (!symbolText) return []
+  const text = String(symbolText).trim()
+  
+  // Match base symbol (one or more uppercase letters at start)
+  const symMatch = text.match(/^([A-Z]+)\s*/)
+  const base = symMatch?.[1] ?? ''
+  
+  // Remove base symbol from text for further processing
+  const remaining = text.slice(symMatch?.[0]?.length || 0)
+  
+  // Match expiry code (6 digits) followed by option type (C/P)
+  const expiryMatch = remaining.match(/(\d{6})([CP])/)
+  let expiry = ''
+  let right = ''
+  let strike = ''
+  
+  if (expiryMatch) {
+    expiry = formatExpiryFromYyMmDd(expiryMatch[1])
+    right = expiryMatch[2]
+    
+    // Extract strike price (remaining digits after expiry and option type)
+    const afterExpiry = remaining.slice(expiryMatch[0].length)
+    const strikeMatch = afterExpiry.match(/(\d+)/)
+    if (strikeMatch) {
+      // Parse as number, divide by 1000 to handle decimal places, then format
+      const strikeValue = parseInt(strikeMatch[1], 10) / 1000
+      strike = strikeValue.toString()
+    }
+  }
+  
+  return [base, expiry, strike, right].filter(Boolean)
+}
+
+function formatExpiryFromYyMmDd(code: string): string {
+  if (!code || code.length !== 6) return ''
+  const yy = code.substring(0, 2)
+  const mm = code.substring(2, 4)
+  const dd = code.substring(4, 6)
+  return `20${yy}-${mm}-${dd}`
 }
 
 const accountFilter = ref<string | null>(null)
@@ -216,6 +291,13 @@ function updateFilters() {
         if (accountVal !== accountFilter.value) return false
       }
 
+      // Symbol tag filter
+      if (symbolTagFilters.value.length > 0) {
+        const symbolTags = extractTagsFromSymbol(data.symbol || '')
+        const hasAllTags = symbolTagFilters.value.every(tag => symbolTags.includes(tag))
+        if (!hasAllTags) return false
+      }
+
       return true
     })
 
@@ -233,6 +315,11 @@ function syncActiveFiltersFromTable() {
   if (accountFilter.value) {
     next.push({ field: 'legal_entity', value: accountFilter.value })
   }
+  if (symbolTagFilters.value.length > 0) {
+    symbolTagFilters.value.forEach(tag => {
+      next.push({ field: 'symbol', value: tag })
+    })
+  }
   activeFilters.value = next
   
   // Update total trades count
@@ -243,7 +330,7 @@ function syncActiveFiltersFromTable() {
   }
 }
 
-function clearFilter(field: 'legal_entity') {
+function clearFilter(field: 'legal_entity' | 'symbol') {
   if (field === 'legal_entity') {
     accountFilter.value = null
     const url = new URL(window.location.href)
@@ -256,14 +343,21 @@ function clearFilter(field: 'legal_entity') {
         source: 'trades'
       })
     }
+  } else if (field === 'symbol') {
+    symbolTagFilters.value = []
+    const url = new URL(window.location.href)
+    url.searchParams.delete('all_cts_fi')
+    window.history.replaceState({}, '', url.toString())
   }
   updateFilters()
 }
 
 function clearAllFilters() {
   accountFilter.value = null
+  symbolTagFilters.value = []
   const url = new URL(window.location.href)
   url.searchParams.delete('all_cts_clientId')
+  url.searchParams.delete('all_cts_fi')
   window.history.replaceState({}, '', url.toString())
   // Emit event to other components
   if (eventBus) {
@@ -276,10 +370,12 @@ function clearAllFilters() {
 }
 
 // URL synchronization for filters
-function parseFiltersFromUrl(): { legal_entity?: string } {
+function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[] } {
   const url = new URL(window.location.href)
   const account = url.searchParams.get('all_cts_clientId') || undefined
-  return { legal_entity: account }
+  const symbolParam = url.searchParams.get('all_cts_fi') || undefined
+  const symbol = symbolParam ? symbolParam.split(',').filter(Boolean) : undefined
+  return { legal_entity: account, symbol }
 }
 
 function handleExternalAccountFilter(payload: { accountId: string | null, source: string }) {
@@ -302,6 +398,7 @@ onMounted(async () => {
   // Initialize filters from URL
   const filters = parseFiltersFromUrl()
   if (filters.legal_entity) accountFilter.value = filters.legal_entity
+  if (filters.symbol) symbolTagFilters.value = filters.symbol
 
   // Try to initialize if data is already loaded
   if (q.isSuccess.value && tableDiv.value && !isTableInitialized.value) {
@@ -335,11 +432,19 @@ onBeforeUnmount(() => {
 window.addEventListener('popstate', () => {
   const filters = parseFiltersFromUrl()
   accountFilter.value = filters.legal_entity || null
+  symbolTagFilters.value = filters.symbol || []
   updateFilters()
 })
 
 // Watch for account filter changes
 watch(accountFilter, () => {
+  if (tabulator && isTabulatorReady.value) {
+    updateFilters()
+  }
+})
+
+// Watch for symbol tag filter changes
+watch(symbolTagFilters, () => {
   if (tabulator && isTabulatorReady.value) {
     updateFilters()
   }
@@ -389,7 +494,25 @@ const columns = computed(() => [
     frozen: true,
     sorter: 'string',
     formatter: (cell: any) => {
-      return `<span style="font-weight: 600; color: #007bff;">${cell.getValue()}</span>`
+      const symbol = cell.getValue()
+      if (!symbol) return '<span style="color: #6c757d; font-style: italic;">N/A</span>'
+      
+      const tags = extractTagsFromSymbol(symbol)
+      const selectedTags = symbolTagFilters.value
+      
+      return tags.map(tag => {
+        const isSelected = selectedTags.includes(tag)
+        return `<span class="fi-tag ${isSelected ? 'fi-tag-selected' : ''}" data-tag="${tag}">${tag}</span>`
+      }).join(' ')
+    },
+    cellClick: (e: any, cell: any) => {
+      const target = e.target as HTMLElement
+      if (target.classList.contains('fi-tag')) {
+        const clickedTag = target.getAttribute('data-tag')
+        if (clickedTag) {
+          handleCellFilterClick('symbol', clickedTag)
+        }
+      }
     },
     contextMenu: createFetchedAtContextMenu()
   },
@@ -742,14 +865,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div v-if="activeFilters.length" class="filters-bar">
+            <div v-if="activeFilters.length" class="filters-bar">
         <span class="filters-label">Filtered by:</span>
         <div class="filters-tags">
           <span v-for="f in activeFilters" :key="`${f.field}-${f.value}`" class="filter-tag">
-            <strong>{{ f.field === 'legal_entity' ? 'Account' : 'Unknown' }}:</strong> {{ f.value }}
+            <strong>{{ f.field === 'legal_entity' ? 'Account' : f.field === 'symbol' ? 'Symbol' : 'Unknown' }}:</strong> {{ f.value }}
             <button class="tag-clear" @click="clearFilter(f.field)">✕</button>
           </span>
-          <button class="btn btn-clear-all" @click="clearAllFilters">Clear all</button>
+          <button class="btn-clear-all" @click="clearAllFilters">Clear all</button>
         </div>
       </div>
 
@@ -964,6 +1087,44 @@ onBeforeUnmount(() => {
   color: #6c757d;
   cursor: pointer;
   font-size: 0.8125rem;
+}
+/* Financial Instrument tags */
+:deep(.fi-tag) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid #dbe2ea;
+  border-radius: 999px;
+  background: #f5f7fa;
+  color: #425466;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+}
+
+:deep(.fi-tag:hover) {
+  background: #e8eef6;
+  border-color: #b8c5d1;
+}
+
+:deep(.fi-tag-selected) {
+  background: #007bff !important;
+  color: white !important;
+  border-color: #0056b3 !important;
+}
+.fi-tag-selected {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.fi-tag-selected:hover {
+  background: #0056b3;
+  border-color: #0056b3;
 }
 
 .loading, .error {
