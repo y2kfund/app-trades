@@ -185,6 +185,18 @@ const netQuantity = computed(() => {
 
 // Column definitions
 const columns = computed(() => [
+  /* {
+    title: 'Trade ID',
+    field: 'tradeID',
+    minWidth: 100,
+    frozen: true,
+    sorter: 'string',
+    formatter: (cell: any) => {
+      const value = cell.getValue()
+      return value ? `<span style="font-weight: 500;">${value}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>'
+    },
+    contextMenu: createFetchedAtContextMenu()
+  }, */
   {
     title: 'Account',
     field: 'legal_entity',
@@ -198,7 +210,7 @@ const columns = computed(() => [
     contextMenu: createFetchedAtContextMenu()
   },
   {
-    title: 'Symbol',
+    title: 'Financial Instrument',
     field: 'symbol',
     minWidth: 120,
     frozen: true,
@@ -226,23 +238,20 @@ const columns = computed(() => [
     contextMenu: createFetchedAtContextMenu()
   },
   {
-    title: 'Quantity',
-    field: 'quantity',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    formatter: (cell: any) => formatNumber(parseFloat(cell.getValue()) || 0),
-    bottomCalc: 'sum',
-    bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue()),
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Price',
-    field: 'tradePrice',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+    title: 'Open / Close',
+    field: 'openCloseIndicator',
+    minWidth: 100,
+    sorter: 'string',
+    formatter: (cell: any) => {
+      const value = cell.getValue()
+      if (value === 'O') {
+        return `<span style="color: #17a2b8; font-weight: bold;">OPEN</span>`
+      }
+      if (value === 'C') {
+        return `<span style="color: #6f42c1; font-weight: bold;">CLOSE</span>`
+      }
+      return value
+    },
     contextMenu: createFetchedAtContextMenu()
   },
   {
@@ -315,6 +324,70 @@ const columns = computed(() => [
     contextMenu: createFetchedAtContextMenu()
   },
   {
+    title: 'Quantity',
+    field: 'quantity',
+    minWidth: 140,
+    hozAlign: 'right',
+    sorter: 'number',
+    // remove mutator (was hiding raw values) and compute in formatter
+    formatter: (cell: any) => {
+      const row = cell.getRow().getData()
+      const rawQ = row?.quantity ?? ''
+      const rawM = row?.multiplier ?? ''
+      const q = parseFloat(rawQ) || 0
+      const m = parseFloat(rawM) || 1
+      const effective = q * m
+      // show raw quantity, multiplier and effective value
+      return formatNumber(effective)
+    },
+    // custom bottomCalc: sum of quantity * multiplier across visible rows
+    /* bottomCalc: (values: any[], data: any[]) => {
+      return (data || []).reduce((sum: number, r: any) => {
+        const q = parseFloat(r.quantity) || 0
+        const m = parseFloat(r.multiplier) || 1
+        return sum + q * m
+      }, 0)
+    },
+    bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue() || 0), */
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Price',
+    field: 'tradePrice',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Total Premium',
+    field: 'tradeMoney',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+    contextMenu: createFetchedAtContextMenu()
+  },  
+  {
+    title: 'Net Cash',
+    field: 'netCash',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'MTM PnL',
+    field: 'mtmPnl',
+    minWidth: 80,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
     title: 'FIFO Realized',
     field: 'fifoPnlRealized',
     minWidth: 80,
@@ -344,6 +417,15 @@ const columns = computed(() => [
     },
     bottomCalc: 'sum',
     bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue()),
+    contextMenu: createFetchedAtContextMenu()
+  },
+  {
+    title: 'Close Price',
+    field: 'closePrice',
+    minWidth: 120,
+    hozAlign: 'right',
+    sorter: 'number',
+    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   }
 ])
