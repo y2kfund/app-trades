@@ -314,6 +314,66 @@ function updateFilters() {
         if (!hasAllTags) return false
       }
 
+      // --- Universal Filter Logic ---
+      if (universalFilter.value.field && universalFilter.value.value !== '') {
+        const field = universalFilter.value.field
+        const op = universalFilter.value.type
+        const val = universalFilter.value.value
+
+        // Numeric columns
+        if (field === 'quantity') {
+          const q = parseFloat(data?.quantity || 0) || 0
+          const m = parseFloat(data?.multiplier || 1) || 1
+          const effective = q * m
+          const numVal = parseFloat(val)
+          switch (op) {
+            case '=': if (!(effective === numVal)) return false; break
+            case '!=': if (!(effective !== numVal)) return false; break
+            case '<': if (!(effective < numVal)) return false; break
+            case '<=': if (!(effective <= numVal)) return false; break
+            case '>': if (!(effective > numVal)) return false; break
+            case '>=': if (!(effective >= numVal)) return false; break
+            default: return false
+          }
+        } else if (
+          field === 'tradePrice' ||
+          field === 'tradeMoney' ||
+          field === 'netCash' ||
+          field === 'mtmPnl' ||
+          field === 'fifoPnlRealized' ||
+          field === 'ibCommission' ||
+          field === 'closePrice'
+        ) {
+          const num = parseFloat(data[field])
+          const numVal = parseFloat(val)
+          switch (op) {
+            case '=': if (!(num === numVal)) return false; break
+            case '!=': if (!(num !== numVal)) return false; break
+            case '<': if (!(num < numVal)) return false; break
+            case '<=': if (!(num <= numVal)) return false; break
+            case '>': if (!(num > numVal)) return false; break
+            case '>=': if (!(num >= numVal)) return false; break
+            default: return false
+          }
+        } else {
+          // String columns
+          const cellVal = String(data[field] ?? '')
+          if (op === 'like') {
+            if (!cellVal.toLowerCase().includes(val.toLowerCase())) return false
+          } else {
+            switch (op) {
+              case '=': if (!(cellVal === val)) return false; break
+              case '!=': if (!(cellVal !== val)) return false; break
+              case '<': if (!(cellVal < val)) return false; break
+              case '<=': if (!(cellVal <= val)) return false; break
+              case '>': if (!(cellVal > val)) return false; break
+              case '>=': if (!(cellVal >= val)) return false; break
+              default: return false
+            }
+          }
+        }
+      }
+
       return true
     })
 
@@ -518,6 +578,16 @@ window.addEventListener('popstate', () => {
   symbolTagFilters.value = filters.symbol || []
   assetFilter.value = filters.asset || null
   quantityFilter.value = filters.quantity ?? null
+
+  // Restore universal filter from URL
+  const uf = parseUniversalFilterFromUrl()
+  universalFilter.value = uf
+  if (uf.field && uf.value !== '') {
+    applyUniversalFilter()
+  } else {
+    clearUniversalFilter()
+  }
+
   updateFilters()
 })
 
@@ -946,6 +1016,14 @@ watch([() => q.isSuccess.value, tableDiv], async ([isSuccess, divRef]) => {
     isTableInitialized.value = true
     // Update total trades count
     totalTrades.value = q.data.value?.length || 0
+
+    // Restore universal filter from URL after Tabulator is ready
+    const uf = parseUniversalFilterFromUrl()
+    if (uf.field && uf.value !== '') {
+      universalFilter.value = uf
+      await nextTick()
+      applyUniversalFilter()
+    }
   }
 }, { immediate: true })
 
@@ -1002,57 +1080,8 @@ const universalFilter = ref<{ field: string, type: string, value: string }>({
 function applyUniversalFilter() {
   if (!tabulator || !isTabulatorReady.value) return
   tabulator.clearFilter(true)
-  if (universalFilter.value.field && universalFilter.value.value !== '') {
-    // Use custom filter for numeric columns
-    if (universalFilter.value.field === 'quantity') {
-      const op = universalFilter.value.type
-      const val = parseFloat(universalFilter.value.value)
-      tabulator.setFilter((data: any) => {
-        const q = parseFloat(data?.quantity || 0) || 0
-        const m = parseFloat(data?.multiplier || 1) || 1
-        const effective = q * m
-        switch (op) {
-          case '=': return effective === val
-          case '!=': return effective !== val
-          case '<': return effective < val
-          case '<=': return effective <= val
-          case '>': return effective > val
-          case '>=': return effective >= val
-          default: return false
-        }
-      })
-    } else if (
-      universalFilter.value.field === 'tradePrice' ||
-      universalFilter.value.field === 'tradeMoney' ||
-      universalFilter.value.field === 'netCash' ||
-      universalFilter.value.field === 'mtmPnl' ||
-      universalFilter.value.field === 'fifoPnlRealized' ||
-      universalFilter.value.field === 'ibCommission' ||
-      universalFilter.value.field === 'closePrice'
-    ) {
-      const op = universalFilter.value.type
-      const val = parseFloat(universalFilter.value.value)
-      tabulator.setFilter((data: any) => {
-        const raw = data[universalFilter.value.field]
-        const num = parseFloat(raw)
-        if (isNaN(num)) return false
-        switch (op) {
-          case '=': return num === val
-          case '!=': return num !== val
-          case '<': return num < val
-          case '<=': return num <= val
-          case '>': return num > val
-          case '>=': return num >= val
-          default: return false
-        }
-      })
-    } else {
-      // Default filter for string columns
-      tabulator.setFilter(universalFilter.value.field, universalFilter.value.type, universalFilter.value.value)
-    }
-    console.log('Applied universal filter:', universalFilter.value)
-  }
-  syncActiveFiltersFromTable()
+  writeUniversalFilterToUrl()
+  updateFilters()
   nextTick(() => {
     if (tabulator) totalTrades.value = tabulator.getDataCount('active') || 0
   })
@@ -1060,13 +1089,30 @@ function applyUniversalFilter() {
 
 function clearUniversalFilter() {
   universalFilter.value = { field: '', type: '=', value: '' }
-  if (tabulator && isTabulatorReady.value) {
-    tabulator.clearFilter(true)
-    syncActiveFiltersFromTable()
-    nextTick(() => {
-      if (tabulator) totalTrades.value = tabulator.getDataCount('active') || 0
-    })
+  writeUniversalFilterToUrl()
+  updateFilters()
+}
+
+function writeUniversalFilterToUrl() {
+  const url = new URL(window.location.href)
+  if (universalFilter.value.field && universalFilter.value.value !== '') {
+    url.searchParams.set('uf_field', universalFilter.value.field)
+    url.searchParams.set('uf_type', universalFilter.value.type)
+    url.searchParams.set('uf_value', universalFilter.value.value)
+  } else {
+    url.searchParams.delete('uf_field')
+    url.searchParams.delete('uf_type')
+    url.searchParams.delete('uf_value')
   }
+  window.history.replaceState({}, '', url.toString())
+}
+
+function parseUniversalFilterFromUrl() {
+  const url = new URL(window.location.href)
+  const field = url.searchParams.get('uf_field') || ''
+  const type = url.searchParams.get('uf_type') || '='
+  const value = url.searchParams.get('uf_value') || ''
+  return { field, type, value }
 }
 
 // Cleanup
