@@ -18277,7 +18277,7 @@ const dc = { class: "trades-card" }, cc = { class: "toast-container" }, fc = { k
                 "onUpdate:modelValue": m[4] || (m[4] = (w) => J.value.type = w),
                 style: { "margin-left": "0.25rem" }
               }, [...m[15] || (m[15] = [
-                fa('<option value="=" data-v-3a912983>=</option><option value="!=" data-v-3a912983>≠</option><option value="&lt;" data-v-3a912983>&lt;</option><option value="&lt;=" data-v-3a912983>&lt;=</option><option value="&gt;" data-v-3a912983>&gt;</option><option value="&gt;=" data-v-3a912983>&gt;=</option><option value="like" data-v-3a912983>contains</option>', 7)
+                fa('<option value="=" data-v-19eb7a5d>=</option><option value="!=" data-v-19eb7a5d>≠</option><option value="&lt;" data-v-19eb7a5d>&lt;</option><option value="&lt;=" data-v-19eb7a5d>&lt;=</option><option value="&gt;" data-v-19eb7a5d>&gt;</option><option value="&gt;=" data-v-19eb7a5d>&gt;=</option><option value="like" data-v-19eb7a5d>contains</option>', 7)
               ])], 512), [
                 [bn, J.value.type]
               ])
@@ -18315,7 +18315,7 @@ const dc = { class: "trades-card" }, cc = { class: "toast-container" }, fc = { k
   for (const [i, s] of e)
     t[i] = s;
   return t;
-}, Ic = /* @__PURE__ */ zc(Oc, [["__scopeId", "data-v-3a912983"]]);
+}, Ic = /* @__PURE__ */ zc(Oc, [["__scopeId", "data-v-19eb7a5d"]]);
 export {
   Ic as Trades,
   Ic as default

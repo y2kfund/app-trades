@@ -1376,8 +1376,8 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #e9ecef;
 }
 
@@ -1675,7 +1675,6 @@ onBeforeUnmount(() => {
   cursor: pointer;
   font-size: 1.125rem;
   transition: all 0.2s;
-  margin-left: 0.5rem;
 }
 .columns-btn:hover {
   background: #f9f9fa;
@@ -1783,17 +1782,29 @@ onBeforeUnmount(() => {
   background: #004085;
 }
 .filter-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 0.25rem;
-  margin-right: 0.25rem;
-  display: inline-flex;
-  align-items: center;
-  transition: background 0.15s;
-  border-radius: 4px;
+    background: none;
+    cursor: pointer;
+    transition: background .15s;
+    border-radius: 4px;
+    width: auto;
+    vertical-align: middle;
+    display: inline-flex;
+    border: 1px solid #dee2e6;
+    padding: 6px 6px;
 }
 .filter-btn:hover {
   background: #f1f3f5;
+}
+.universal-filter-bar button {
+    width: auto;
+    padding: 5px 7px;
+    font-size: 0.9rem;
+}
+.universal-filter-bar input, .universal-filter-bar select {
+    width: auto;
+    padding: 4px 5px;
+}
+.universal-filter-bar label {
+    margin-bottom: 0;
 }
 </style>
