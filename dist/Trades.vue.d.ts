@@ -12,6 +12,8 @@ declare const _default: import('vue').DefineComponent<TradesProps, {}, {}, {}, {
     showHeaderLink: boolean;
     userId: string | null;
 }, {}, {}, {}, string, import('vue').ComponentProvideOptions, false, {
+    tradesColumnsBtnRef: HTMLButtonElement;
+    tradesColumnsPopupRef: HTMLDivElement;
     tableDiv: HTMLDivElement;
 }, HTMLDivElement>;
 export default _default;

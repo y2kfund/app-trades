@@ -1115,6 +1115,13 @@ function parseUniversalFilterFromUrl() {
   return { field, type, value }
 }
 
+const showUniversalFilterBar = ref(
+  !!(universalFilter.value.field && universalFilter.value.value)
+)
+function toggleUniversalFilterBar() {
+  showUniversalFilterBar.value = !showUniversalFilterBar.value
+}
+
 // Cleanup
 onBeforeUnmount(() => {
   if (tabulator) {
@@ -1163,7 +1170,16 @@ onBeforeUnmount(() => {
           <span v-else>Trades:</span>
         </h2>
         <div class="trades-tools">
-          <div class="trades-count">{{ totalTrades }} trades</div>          
+          <div class="trades-count">{{ totalTrades }} trades</div>
+          <button
+            class="filter-btn"
+            @click="toggleUniversalFilterBar"
+            :title="showUniversalFilterBar ? 'Hide Filter' : 'Show Filter'"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 5h18M6 10h12M10 15h4" stroke="#007bff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>          
           <button
             ref="tradesColumnsBtnRef"
             class="columns-btn"
@@ -1223,7 +1239,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Add this above your Tabulator table in the template -->
-      <div class="universal-filter-bar" style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+      <div v-if="showUniversalFilterBar || (universalFilter.field && universalFilter.value)" class="universal-filter-bar" style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
         <label>
           Field:
           <select v-model="universalFilter.field" style="margin-left: 0.25rem;">
@@ -1765,5 +1781,19 @@ onBeforeUnmount(() => {
 }
 .btn-done:active {
   background: #004085;
+}
+.filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  margin-right: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s;
+  border-radius: 4px;
+}
+.filter-btn:hover {
+  background: #f1f3f5;
 }
 </style>
