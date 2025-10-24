@@ -537,6 +537,86 @@ watch(symbolTagFilters, () => {
 
 // Computed values for summary
 const totalTrades = ref(0)
+type TradesColumnField = 
+  | 'legal_entity' | 'symbol' | 'buySell' | 'openCloseIndicator' | 'assetCategory'
+  | 'tradeDate' | 'settleDateTarget' | 'quantity' | 'tradePrice'
+  | 'tradeMoney' | 'netCash' | 'mtmPnl' | 'fifoPnlRealized'
+  | 'ibCommission' | 'closePrice'
+
+const allTradesColumnOptions: Array<{ field: TradesColumnField; label: string }> = [
+  { field: 'legal_entity', label: 'Account' },
+  { field: 'symbol', label: 'Financial Instrument' },
+  { field: 'buySell', label: 'Side' },
+  { field: 'openCloseIndicator', label: 'Open / Close' },
+  { field: 'assetCategory', label: 'Asset Class' },
+  { field: 'tradeDate', label: 'Trade Date' },
+  { field: 'settleDateTarget', label: 'Settlement Date Target' },
+  { field: 'quantity', label: 'Quantity' },
+  { field: 'tradePrice', label: 'Price' },
+  { field: 'tradeMoney', label: 'Total Premium' },
+  { field: 'netCash', label: 'Net Cash' },
+  { field: 'mtmPnl', label: 'MTM PnL' },
+  { field: 'fifoPnlRealized', label: 'FIFO Realized' },
+  { field: 'ibCommission', label: 'Commission' },
+  { field: 'closePrice', label: 'Close Price' }
+]
+
+// URL param helpers for column visibility
+function parseTradesVisibleColsFromUrl(): TradesColumnField[] {
+  const url = new URL(window.location.href)
+  const colsParam = url.searchParams.get('trades_cols')
+  if (!colsParam) {
+    return allTradesColumnOptions.map(c => c.field)
+  }
+  const fromUrl = colsParam.split('-and-').map(s => s.trim()).filter(Boolean) as TradesColumnField[]
+  const valid = new Set(allTradesColumnOptions.map(c => c.field))
+  const filtered = fromUrl.filter(c => valid.has(c))
+  return filtered.length ? filtered : allTradesColumnOptions.map(c => c.field)
+}
+
+function writeTradesVisibleColsToUrl(cols: TradesColumnField[]) {
+  const url = new URL(window.location.href)
+  url.searchParams.set('trades_cols', cols.join('-and-'))
+  window.history.replaceState({}, '', url.toString())
+}
+
+const tradesVisibleCols = ref<TradesColumnField[]>(parseTradesVisibleColsFromUrl())
+
+function isTradesColVisible(field: TradesColumnField): boolean {
+  return tradesVisibleCols.value.includes(field)
+}
+
+// Popup state
+const showTradesColumnsPopup = ref(false)
+const tradesColumnsBtnRef = ref<HTMLElement | null>(null)
+const tradesColumnsPopupRef = ref<HTMLElement | null>(null)
+
+function toggleTradesColumnsPopup() {
+  showTradesColumnsPopup.value = !showTradesColumnsPopup.value
+}
+function closeTradesColumnsPopup() {
+  showTradesColumnsPopup.value = false
+}
+function handleTradesClickOutside(event: Event) {
+  if (
+    showTradesColumnsPopup.value &&
+    tradesColumnsPopupRef.value &&
+    tradesColumnsBtnRef.value &&
+    !tradesColumnsPopupRef.value.contains(event.target as Node) &&
+    !tradesColumnsBtnRef.value.contains(event.target as Node)
+  ) {
+    closeTradesColumnsPopup()
+  }
+}
+document.addEventListener('click', handleTradesClickOutside)
+
+// Rebuild Tabulator when columns change
+watch(tradesVisibleCols, (cols) => {
+  writeTradesVisibleColsToUrl(cols)
+  nextTick(() => {
+    initializeTabulator()
+  })
+}, { deep: true })
 
 // Column definitions
 const columns = computed(() => [
@@ -810,7 +890,7 @@ const columns = computed(() => [
     formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   }
-])
+].filter(col => tradesVisibleCols.value.includes(col.field as TradesColumnField)))
 
 // Initialize Tabulator
 function initializeTabulator() {
@@ -962,6 +1042,17 @@ onBeforeUnmount(() => {
         </h2>
         <div class="trades-tools">
           <div class="trades-count">{{ totalTrades }} trades</div>          
+          <button
+            ref="tradesColumnsBtnRef"
+            class="columns-btn"
+            aria-label="Column settings"
+            @click.stop="toggleTradesColumnsPopup"
+            title="Column Settings"
+          >
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.21-.37-.3-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.03-.22-.22-.39-.44-.39h-3.84c-.22 0-.41.16-.44.39l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.09-.47 0-.59.22l-1.92 3.32c-.12.21-.07.47.12.61l2.03 1.58c.04.31.06.63.06.94s-.02.63-.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.21.37.3.59.22l2.39.96c.5.38 1.03.7 1.62.94l.36 2.54c.03.22.22.39.44.39h3.84c.22 0 .41-.16.44-.39l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.09.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.03-1.58ZM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5Z"/>
+            </svg>
+          </button>
           <button 
             v-if="showHeaderLink"
             @click="onMinimize"
@@ -970,6 +1061,31 @@ onBeforeUnmount(() => {
           >
             −
           </button>
+          <div v-if="showTradesColumnsPopup" ref="tradesColumnsPopupRef" class="columns-dropdown" @click.stop>
+            <div class="columns-header">
+              <span class="columns-title">Columns</span>
+            </div>
+            <div class="columns-content">
+              <label v-for="opt in allTradesColumnOptions" :key="opt.field" class="column-option">
+                <input 
+                  type="checkbox" 
+                  :value="opt.field" 
+                  v-model="tradesVisibleCols"
+                  class="column-checkbox"
+                />
+                <span class="column-label">{{ opt.label }}</span>
+              </label>
+            </div>
+            <div class="columns-footer">
+              <button 
+                class="btn-link" 
+                @click="tradesVisibleCols = allTradesColumnOptions.map(c => c.field)"
+              >
+                Show All
+              </button>
+              <button class="btn-done" @click="closeTradesColumnsPopup">Done</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1109,6 +1225,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
+  position: relative;
 }
 
 .trades-count,
@@ -1377,5 +1494,125 @@ onBeforeUnmount(() => {
   .trades-grid {
     height: auto;
   }
+}
+.columns-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  color: #495057;
+  cursor: pointer;
+  font-size: 1.125rem;
+  transition: all 0.2s;
+  margin-left: 0.5rem;
+}
+.columns-btn:hover {
+  background: #f9f9fa;
+  border-color: #adb5bd;
+  transform: scale(1.05);
+}
+.columns-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 260px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 1000;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.columns-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+.columns-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+.columns-content {
+  padding: 4px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.column-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin: 0;
+  font-size: 13px;
+}
+.column-option:hover {
+  background-color: #f8f9fa;
+}
+.column-checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid #ccc;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #007bff;
+}
+.column-checkbox:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+.column-label {
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.2;
+}
+.columns-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.btn-link:hover {
+  color: #495057;
+  text-decoration: underline;
+}
+.btn-done {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.btn-done:hover {
+  background: #0056b3;
+}
+.btn-done:active {
+  background: #004085;
 }
 </style>
