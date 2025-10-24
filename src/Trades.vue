@@ -993,6 +993,82 @@ function formatExpiryFromYyMmDd(code: string): string {
   return `20${yy}-${mm}-${dd}`
 }
 
+const universalFilter = ref<{ field: string, type: string, value: string }>({
+  field: '',
+  type: '=',
+  value: ''
+})
+
+function applyUniversalFilter() {
+  if (!tabulator || !isTabulatorReady.value) return
+  tabulator.clearFilter(true)
+  if (universalFilter.value.field && universalFilter.value.value !== '') {
+    // Use custom filter for numeric columns
+    if (universalFilter.value.field === 'quantity') {
+      const op = universalFilter.value.type
+      const val = parseFloat(universalFilter.value.value)
+      tabulator.setFilter((data: any) => {
+        const q = parseFloat(data?.quantity || 0) || 0
+        const m = parseFloat(data?.multiplier || 1) || 1
+        const effective = q * m
+        switch (op) {
+          case '=': return effective === val
+          case '!=': return effective !== val
+          case '<': return effective < val
+          case '<=': return effective <= val
+          case '>': return effective > val
+          case '>=': return effective >= val
+          default: return false
+        }
+      })
+    } else if (
+      universalFilter.value.field === 'tradePrice' ||
+      universalFilter.value.field === 'tradeMoney' ||
+      universalFilter.value.field === 'netCash' ||
+      universalFilter.value.field === 'mtmPnl' ||
+      universalFilter.value.field === 'fifoPnlRealized' ||
+      universalFilter.value.field === 'ibCommission' ||
+      universalFilter.value.field === 'closePrice'
+    ) {
+      const op = universalFilter.value.type
+      const val = parseFloat(universalFilter.value.value)
+      tabulator.setFilter((data: any) => {
+        const raw = data[universalFilter.value.field]
+        const num = parseFloat(raw)
+        if (isNaN(num)) return false
+        switch (op) {
+          case '=': return num === val
+          case '!=': return num !== val
+          case '<': return num < val
+          case '<=': return num <= val
+          case '>': return num > val
+          case '>=': return num >= val
+          default: return false
+        }
+      })
+    } else {
+      // Default filter for string columns
+      tabulator.setFilter(universalFilter.value.field, universalFilter.value.type, universalFilter.value.value)
+    }
+    console.log('Applied universal filter:', universalFilter.value)
+  }
+  syncActiveFiltersFromTable()
+  nextTick(() => {
+    if (tabulator) totalTrades.value = tabulator.getDataCount('active') || 0
+  })
+}
+
+function clearUniversalFilter() {
+  universalFilter.value = { field: '', type: '=', value: '' }
+  if (tabulator && isTabulatorReady.value) {
+    tabulator.clearFilter(true)
+    syncActiveFiltersFromTable()
+    nextTick(() => {
+      if (tabulator) totalTrades.value = tabulator.getDataCount('active') || 0
+    })
+  }
+}
+
 // Cleanup
 onBeforeUnmount(() => {
   if (tabulator) {
@@ -1098,6 +1174,35 @@ onBeforeUnmount(() => {
           </span>
           <button class="btn-clear-all" @click="clearAllFilters">Clear all</button>
         </div>
+      </div>
+
+      <!-- Add this above your Tabulator table in the template -->
+      <div class="universal-filter-bar" style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+        <label>
+          Field:
+          <select v-model="universalFilter.field" style="margin-left: 0.25rem;">
+            <option disabled value="">Select</option>
+            <option v-for="col in allTradesColumnOptions" :key="col.field" :value="col.field">{{ col.label }}</option>
+          </select>
+        </label>
+        <label>
+          Type:
+          <select v-model="universalFilter.type" style="margin-left: 0.25rem;">
+            <option value="=">=</option>
+            <option value="!=">≠</option>
+            <option value="<">&lt;</option>
+            <option value="<=">&lt;=</option>
+            <option value=">">&gt;</option>
+            <option value=">=">&gt;=</option>
+            <option value="like">contains</option>
+          </select>
+        </label>
+        <label>
+          Value:
+          <input v-model="universalFilter.value" style="margin-left: 0.25rem; width: 120px;" @keyup.enter="applyUniversalFilter" />
+        </label>
+        <button @click="applyUniversalFilter" style="margin-left: 0.5rem;">Apply Filter</button>
+        <button @click="clearUniversalFilter" style="margin-left: 0.25rem;">Clear</button>
       </div>
 
       <!-- Tabulator table -->
