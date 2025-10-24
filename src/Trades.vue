@@ -22,7 +22,7 @@ const emit = defineEmits<{
 const eventBus = inject<any>('eventBus')
 
 // Active filters
-type ActiveFilter = { field: 'symbol' | 'legal_entity'; value: string }
+type ActiveFilter = { field: 'symbol' | 'legal_entity' | 'assetCategory' | 'quantity'; value: string }
 const activeFilters = ref<ActiveFilter[]>([])
 
 // Symbol filters
@@ -178,7 +178,7 @@ function formatNumber(value: number): string {
 }
 
 // Filter handlers
-function handleCellFilterClick(field: 'legal_entity' | 'symbol', value: string) {
+function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quantity', value: string) {
   if (field === 'legal_entity') {
     // Toggle account filter
     if (accountFilter.value === value) {
@@ -233,53 +233,45 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol', value: string) 
     }
     
     updateFilters()
-  }
-}
-
-// Extract tags from symbol
-function extractTagsFromSymbol(symbolText: string): string[] {
-  if (!symbolText) return []
-  const text = String(symbolText).trim()
-  
-  // Match base symbol (one or more uppercase letters at start)
-  const symMatch = text.match(/^([A-Z]+)\s*/)
-  const base = symMatch?.[1] ?? ''
-  
-  // Remove base symbol from text for further processing
-  const remaining = text.slice(symMatch?.[0]?.length || 0)
-  
-  // Match expiry code (6 digits) followed by option type (C/P)
-  const expiryMatch = remaining.match(/(\d{6})([CP])/)
-  let expiry = ''
-  let right = ''
-  let strike = ''
-  
-  if (expiryMatch) {
-    expiry = formatExpiryFromYyMmDd(expiryMatch[1])
-    right = expiryMatch[2]
-    
-    // Extract strike price (remaining digits after expiry and option type)
-    const afterExpiry = remaining.slice(expiryMatch[0].length)
-    const strikeMatch = afterExpiry.match(/(\d+)/)
-    if (strikeMatch) {
-      // Parse as number, divide by 1000 to handle decimal places, then format
-      const strikeValue = parseInt(strikeMatch[1], 10) / 1000
-      strike = strikeValue.toString()
+  } else if (field === 'assetCategory') {
+    // Toggle asset class filter (string equality)
+    if (assetFilter.value === value) {
+      assetFilter.value = null
+      const url = new URL(window.location.href)
+      url.searchParams.delete('all_cts_asset')
+      window.history.replaceState({}, '', url.toString())
+      if (eventBus) eventBus.emit('asset-filter-changed', { asset: null, source: 'trades' })
+    } else {
+      assetFilter.value = value
+      const url = new URL(window.location.href)
+      url.searchParams.set('all_cts_asset', value)
+      window.history.replaceState({}, '', url.toString())
+      if (eventBus) eventBus.emit('asset-filter-changed', { asset: value, source: 'trades' })
     }
+    updateFilters()
+  } else if (field === 'quantity') {
+    // Toggle quantity filter (effective quantity = quantity * multiplier)
+    const num = Number(value)
+    if (quantityFilter.value !== null && Math.abs((quantityFilter.value || 0) - num) < 1e-9) {
+      quantityFilter.value = null
+      const url = new URL(window.location.href)
+      url.searchParams.delete('all_cts_qty')
+      window.history.replaceState({}, '', url.toString())
+      if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
+    } else {
+      quantityFilter.value = num
+      const url = new URL(window.location.href)
+      url.searchParams.set('all_cts_qty', String(num))
+      window.history.replaceState({}, '', url.toString())
+      if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: num, source: 'trades' })
+    }
+    updateFilters()
   }
-  
-  return [base, expiry, strike, right].filter(Boolean)
-}
-
-function formatExpiryFromYyMmDd(code: string): string {
-  if (!code || code.length !== 6) return ''
-  const yy = code.substring(0, 2)
-  const mm = code.substring(2, 4)
-  const dd = code.substring(4, 6)
-  return `20${yy}-${mm}-${dd}`
 }
 
 const accountFilter = ref<string | null>(null)
+const assetFilter = ref<string | null>(null)
+const quantityFilter = ref<number | null>(null)
 
 // Update filters to work with table
 function updateFilters() {
@@ -293,11 +285,26 @@ function updateFilters() {
 
       // Account filter
       if (accountFilter.value) {
-        // Support both string and object for legal_entity
         const accountVal = typeof data.legal_entity === 'object' && data.legal_entity !== null
           ? (data.legal_entity.name || data.legal_entity.id)
           : data.legal_entity
         if (accountVal !== accountFilter.value) return false
+      }
+
+      // Asset class filter
+      if (assetFilter.value) {
+        const assetVal = typeof data.assetCategory === 'object' && data.assetCategory !== null
+          ? (data.assetCategory.name || data.assetCategory.id)
+          : data.assetCategory
+        if (String(assetVal) !== assetFilter.value) return false
+      }
+
+      // Quantity filter (compare effective quantity = quantity * multiplier)
+      if (quantityFilter.value !== null) {
+        const q = parseFloat(data?.quantity || 0) || 0
+        const m = parseFloat(data?.multiplier || 1) || 1
+        const effective = q * m
+        if (Math.abs(effective - (quantityFilter.value || 0)) > 1e-6) return false
       }
 
       // Symbol tag filter
@@ -324,6 +331,12 @@ function syncActiveFiltersFromTable() {
   if (accountFilter.value) {
     next.push({ field: 'legal_entity', value: accountFilter.value })
   }
+  if (assetFilter.value) {
+    next.push({ field: 'assetCategory', value: assetFilter.value })
+  }
+  if (quantityFilter.value !== null) {
+    next.push({ field: 'quantity', value: String(quantityFilter.value) })
+  }
   if (symbolTagFilters.value.length > 0) {
     symbolTagFilters.value.forEach(tag => {
       next.push({ field: 'symbol', value: tag })
@@ -339,7 +352,7 @@ function syncActiveFiltersFromTable() {
   }
 }
 
-function clearFilter(field: 'legal_entity' | 'symbol') {
+function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quantity') {
   if (field === 'legal_entity') {
     accountFilter.value = null
     const url = new URL(window.location.href)
@@ -357,6 +370,18 @@ function clearFilter(field: 'legal_entity' | 'symbol') {
     const url = new URL(window.location.href)
     url.searchParams.delete('all_cts_fi')
     window.history.replaceState({}, '', url.toString())
+  } else if (field === 'assetCategory') {
+    assetFilter.value = null
+    const url = new URL(window.location.href)
+    url.searchParams.delete('all_cts_asset')
+    window.history.replaceState({}, '', url.toString())
+    if (eventBus) eventBus.emit('asset-filter-changed', { asset: null, source: 'trades' })
+  } else if (field === 'quantity') {
+    quantityFilter.value = null
+    const url = new URL(window.location.href)
+    url.searchParams.delete('all_cts_qty')
+    window.history.replaceState({}, '', url.toString())
+    if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
   }
   updateFilters()
 }
@@ -364,27 +389,32 @@ function clearFilter(field: 'legal_entity' | 'symbol') {
 function clearAllFilters() {
   accountFilter.value = null
   symbolTagFilters.value = []
+  assetFilter.value = null
+  quantityFilter.value = null
   const url = new URL(window.location.href)
   url.searchParams.delete('all_cts_clientId')
   url.searchParams.delete('all_cts_fi')
+  url.searchParams.delete('all_cts_asset')
+  url.searchParams.delete('all_cts_qty')
   window.history.replaceState({}, '', url.toString())
-  // Emit event to other components
   if (eventBus) {
-    eventBus.emit('account-filter-changed', {
-      accountId: null,
-      source: 'trades'
-    })
+    eventBus.emit('account-filter-changed', { accountId: null, source: 'trades' })
+    eventBus.emit('asset-filter-changed', { asset: null, source: 'trades' })
+    eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
   }
   updateFilters()
 }
 
 // URL synchronization for filters
-function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[] } {
+function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[]; asset?: string; quantity?: number } {
   const url = new URL(window.location.href)
   const account = url.searchParams.get('all_cts_clientId') || undefined
   const symbolParam = url.searchParams.get('all_cts_fi') || undefined
   const symbol = symbolParam ? symbolParam.split(',').filter(Boolean) : undefined
-  return { legal_entity: account, symbol }
+  const asset = url.searchParams.get('all_cts_asset') || undefined
+  const qtyParam = url.searchParams.get('all_cts_qty') || undefined
+  const quantity = qtyParam ? Number(qtyParam) : undefined
+  return { legal_entity: account, symbol, asset, quantity }
 }
 
 function handleExternalAccountFilter(payload: { accountId: string | null, source: string }) {
@@ -419,11 +449,33 @@ function handleExternalSymbolFilter(payload: { symbolTags: string[], source: str
   updateFilters()
 }
 
+function handleExternalAssetFilter(payload: { asset: string | null, source: string }) {
+  if (payload.source === 'trades') return
+  assetFilter.value = payload.asset
+  const url = new URL(window.location.href)
+  if (payload.asset) url.searchParams.set('all_cts_asset', payload.asset)
+  else url.searchParams.delete('all_cts_asset')
+  window.history.replaceState({}, '', url.toString())
+  updateFilters()
+}
+
+function handleExternalQuantityFilter(payload: { quantity: number | null, source: string }) {
+  if (payload.source === 'trades') return
+  quantityFilter.value = payload.quantity
+  const url = new URL(window.location.href)
+  if (payload.quantity !== null && payload.quantity !== undefined) url.searchParams.set('all_cts_qty', String(payload.quantity))
+  else url.searchParams.delete('all_cts_qty')
+  window.history.replaceState({}, '', url.toString())
+  updateFilters()
+}
+
 onMounted(async () => {
   // Initialize filters from URL
   const filters = parseFiltersFromUrl()
   if (filters.legal_entity) accountFilter.value = filters.legal_entity
   if (filters.symbol) symbolTagFilters.value = filters.symbol
+  if (filters.asset) assetFilter.value = filters.asset
+  if (filters.quantity !== undefined) quantityFilter.value = filters.quantity
 
   // Try to initialize if data is already loaded
   if (q.isSuccess.value && tableDiv.value && !isTableInitialized.value) {
@@ -437,6 +489,8 @@ onMounted(async () => {
   if (eventBus) {
     eventBus.on('account-filter-changed', handleExternalAccountFilter)
     eventBus.on('symbol-filter-changed', handleExternalSymbolFilter)
+    eventBus.on('asset-filter-changed', handleExternalAssetFilter)
+    eventBus.on('quantity-filter-changed', handleExternalQuantityFilter)
   }
 })
 
@@ -452,6 +506,8 @@ onBeforeUnmount(() => {
   if (eventBus) {
     eventBus.off('account-filter-changed', handleExternalAccountFilter)
     eventBus.off('symbol-filter-changed', handleExternalSymbolFilter)
+    eventBus.off('asset-filter-changed', handleExternalAssetFilter)
+    eventBus.off('quantity-filter-changed', handleExternalQuantityFilter)
   }
   q._cleanup?.()
 })
@@ -460,6 +516,8 @@ window.addEventListener('popstate', () => {
   const filters = parseFiltersFromUrl()
   accountFilter.value = filters.legal_entity || null
   symbolTagFilters.value = filters.symbol || []
+  assetFilter.value = filters.asset || null
+  quantityFilter.value = filters.quantity ?? null
   updateFilters()
 })
 
@@ -529,7 +587,7 @@ const columns = computed(() => [
       
       return tags.map(tag => {
         const isSelected = selectedTags.includes(tag)
-        return `<span class="fi-tag ${isSelected ? 'fi-tag-selected' : ''}" data-tag="${tag}">${tag}</span>`
+        return `<span class="fi-tag" data-tag="${tag}">${tag}</span>`
       }).join(' ')
     },
     cellClick: (e: any, cell: any) => {
@@ -582,6 +640,11 @@ const columns = computed(() => [
     field: 'assetCategory',
     minWidth: 120,
     sorter: 'string',
+    cellClick: (e: any, cell: any) => {
+      const value = cell.getValue()
+      const assetName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
+      if (assetName) handleCellFilterClick('assetCategory', assetName)
+    },
     contextMenu: createFetchedAtContextMenu()
   },
   {
@@ -652,7 +715,6 @@ const columns = computed(() => [
     minWidth: 140,
     hozAlign: 'right',
     sorter: 'number',
-    // remove mutator (was hiding raw values) and compute in formatter
     formatter: (cell: any) => {
       const row = cell.getRow().getData()
       const rawQ = row?.quantity ?? ''
@@ -660,18 +722,15 @@ const columns = computed(() => [
       const q = parseFloat(rawQ) || 0
       const m = parseFloat(rawM) || 1
       const effective = q * m
-      // show raw quantity, multiplier and effective value
       return formatNumber(effective)
     },
-    // custom bottomCalc: sum of quantity * multiplier across visible rows
-    /* bottomCalc: (values: any[], data: any[]) => {
-      return (data || []).reduce((sum: number, r: any) => {
-        const q = parseFloat(r.quantity) || 0
-        const m = parseFloat(r.multiplier) || 1
-        return sum + q * m
-      }, 0)
+    cellClick: (e: any, cell: any) => {
+      const row = cell.getRow().getData()
+      const q = parseFloat(row?.quantity || 0) || 0
+      const m = parseFloat(row?.multiplier || 1) || 1
+      const effective = q * m
+      handleCellFilterClick('quantity', String(effective))
     },
-    bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue() || 0), */
     contextMenu: createFetchedAtContextMenu()
   },
   {
@@ -832,6 +891,28 @@ function onMinimize() {
   emit('minimize')
 }
 
+function extractTagsFromSymbol(symbolText: string): string[] {
+  if (!symbolText) return []
+  const text = String(symbolText)
+  const symMatch = text.match(/^([A-Z]+)\b/)
+  const base = symMatch?.[1] ?? ''
+  const rightMatch = text.match(/\s([CP])\b/)
+  const right = rightMatch?.[1] ?? ''
+  const strikeMatch = text.match(/\s(\d+(?:\.\d+)?)\s+[CP]\b/)
+  const strike = strikeMatch?.[1] ?? ''
+  const codeMatch = text.match(/\b(\d{6})[CP]/)
+  const expiry = codeMatch ? formatExpiryFromYyMmDd(codeMatch[1]) : ''
+  return [base, expiry, strike, right].filter(Boolean)
+}
+
+function formatExpiryFromYyMmDd(code: string): string {
+  if (!code || code.length !== 6) return ''
+  const yy = code.substring(0, 2)
+  const mm = code.substring(2, 4)
+  const dd = code.substring(4, 6)
+  return `20${yy}-${mm}-${dd}`
+}
+
 // Cleanup
 onBeforeUnmount(() => {
   if (tabulator) {
@@ -896,7 +977,7 @@ onBeforeUnmount(() => {
         <span class="filters-label">Filtered by:</span>
         <div class="filters-tags">
           <span v-for="f in activeFilters" :key="`${f.field}-${f.value}`" class="filter-tag">
-            <strong>{{ f.field === 'legal_entity' ? 'Account' : f.field === 'symbol' ? 'Symbol' : 'Unknown' }}:</strong> {{ f.value }}
+            <strong>{{ f.field === 'legal_entity' ? 'Account' : f.field === 'symbol' ? 'Symbol' : f.field === 'assetCategory' ? 'Asset Class' : f.field === 'quantity' ? 'Quantity' : 'Unknown' }}:</strong> {{ f.value }}
             <button class="tag-clear" @click="clearFilter(f.field)">✕</button>
           </span>
           <button class="btn-clear-all" @click="clearAllFilters">Clear all</button>
@@ -1219,6 +1300,7 @@ onBeforeUnmount(() => {
 :deep(.tabulator-header) {
   background-color: #f8f9fa !important;
   border-bottom: 2px solid #dee2e6 !important;
+  padding-left: 0;
 }
 
 :deep(.tabulator-col) {
