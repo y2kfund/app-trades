@@ -1051,15 +1051,35 @@ function onMinimize() {
 
 function extractTagsFromSymbol(symbolText: string): string[] {
   if (!symbolText) return []
-  const text = String(symbolText)
-  const symMatch = text.match(/^([A-Z]+)\b/)
+  const text = String(symbolText).trim()
+  
+  // Match base symbol (one or more uppercase letters at start)
+  const symMatch = text.match(/^([A-Z]+)\s*/)
   const base = symMatch?.[1] ?? ''
-  const rightMatch = text.match(/\s([CP])\b/)
-  const right = rightMatch?.[1] ?? ''
-  const strikeMatch = text.match(/\s(\d+(?:\.\d+)?)\s+[CP]\b/)
-  const strike = strikeMatch?.[1] ?? ''
-  const codeMatch = text.match(/\b(\d{6})[CP]/)
-  const expiry = codeMatch ? formatExpiryFromYyMmDd(codeMatch[1]) : ''
+  
+  // Remove base symbol from text for further processing
+  const remaining = text.slice(symMatch?.[0]?.length || 0)
+  
+  // Match expiry code (6 digits) followed by option type (C/P)
+  const expiryMatch = remaining.match(/(\d{6})([CP])/)
+  let expiry = ''
+  let right = ''
+  let strike = ''
+  
+  if (expiryMatch) {
+    expiry = formatExpiryFromYyMmDd(expiryMatch[1])
+    right = expiryMatch[2]
+    
+    // Extract strike price (remaining digits after expiry and option type)
+    const afterExpiry = remaining.slice(expiryMatch[0].length)
+    const strikeMatch = afterExpiry.match(/(\d+)/)
+    if (strikeMatch) {
+      // Parse as number, divide by 1000 to handle decimal places, then format
+      const strikeValue = parseInt(strikeMatch[1], 10) / 1000
+      strike = strikeValue.toString()
+    }
+  }
+  
   return [base, expiry, strike, right].filter(Boolean)
 }
 
