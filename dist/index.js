@@ -18045,8 +18045,6 @@ const wc = { class: "trades-card" }, yc = { class: "toast-container" }, Cc = { k
         data: a.data.value || [],
         columns: ta.value,
         layout: "fitColumns",
-        // fixed height so Tabulator will keep header frozen and make the body scrollable
-        height: "60vh",
         placeholder: "No trades available",
         virtualDom: !1,
         rowClick: (m, y) => {
@@ -18309,7 +18307,7 @@ const wc = { class: "trades-card" }, yc = { class: "toast-container" }, Cc = { k
                 "onUpdate:modelValue": m[4] || (m[4] = (w) => J.value.type = w),
                 style: { "margin-left": "0.25rem" }
               }, [...m[16] || (m[16] = [
-                Ea('<option value="=" data-v-33d82694>=</option><option value="!=" data-v-33d82694>≠</option><option value="&lt;" data-v-33d82694>&lt;</option><option value="&lt;=" data-v-33d82694>&lt;=</option><option value="&gt;" data-v-33d82694>&gt;</option><option value="&gt;=" data-v-33d82694>&gt;=</option><option value="like" data-v-33d82694>contains</option>', 7)
+                Ea('<option value="=" data-v-cfddc48f>=</option><option value="!=" data-v-cfddc48f>≠</option><option value="&lt;" data-v-cfddc48f>&lt;</option><option value="&lt;=" data-v-cfddc48f>&lt;=</option><option value="&gt;" data-v-cfddc48f>&gt;</option><option value="&gt;=" data-v-cfddc48f>&gt;=</option><option value="like" data-v-cfddc48f>contains</option>', 7)
               ])], 512), [
                 [Rn, J.value.type]
               ])
@@ -18364,7 +18362,7 @@ const wc = { class: "trades-card" }, yc = { class: "toast-container" }, Cc = { k
   for (const [i, s] of e)
     t[i] = s;
   return t;
-}, Jc = /* @__PURE__ */ Uc(jc, [["__scopeId", "data-v-33d82694"]]);
+}, Jc = /* @__PURE__ */ Uc(jc, [["__scopeId", "data-v-cfddc48f"]]);
 export {
   Jc as Trades,
   Jc as default

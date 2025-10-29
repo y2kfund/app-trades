@@ -1011,8 +1011,6 @@ function initializeTabulator() {
   data: q.data.value || [],
   columns: columns.value,
   layout: 'fitColumns',
-  // fixed height so Tabulator will keep header frozen and make the body scrollable
-  height: '60vh',
     placeholder: 'No trades available',
     virtualDom: false,
     rowClick: (e: any, row: any) => {
@@ -1639,8 +1637,6 @@ onBeforeUnmount(() => {
 .trades-grid {
   margin-top: 0.5rem;
   min-height: 200px;
-  height: 60vh; /* match Tabulator height so header stays fixed */
-  overflow: hidden;
 }
 
 /* Tabulator theme overrides */
@@ -1726,10 +1722,6 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
-  }
-  
-  .trades-grid {
-    height: auto;
   }
 }
 .columns-btn {
