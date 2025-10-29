@@ -1252,7 +1252,7 @@ onBeforeUnmount(() => {
             v-if="showHeaderLink"
             @click="onMinimize"
             class="minimize-button"
-            title="Minimize Trades"
+            title="Close"
           >
             X
           </button>

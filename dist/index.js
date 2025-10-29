@@ -18220,7 +18220,7 @@ const wc = { class: "trades-card" }, yc = { class: "toast-container" }, Cc = { k
                 key: 0,
                 onClick: ia,
                 class: "minimize-button",
-                title: "Minimize Trades"
+                title: "Close"
               }, " X ")) : Xe("", !0),
               Nt.value ? (se(), ne("div", {
                 key: 1,
@@ -18307,7 +18307,7 @@ const wc = { class: "trades-card" }, yc = { class: "toast-container" }, Cc = { k
                 "onUpdate:modelValue": m[4] || (m[4] = (w) => J.value.type = w),
                 style: { "margin-left": "0.25rem" }
               }, [...m[16] || (m[16] = [
-                Ea('<option value="=" data-v-706b7c2d>=</option><option value="!=" data-v-706b7c2d>≠</option><option value="&lt;" data-v-706b7c2d>&lt;</option><option value="&lt;=" data-v-706b7c2d>&lt;=</option><option value="&gt;" data-v-706b7c2d>&gt;</option><option value="&gt;=" data-v-706b7c2d>&gt;=</option><option value="like" data-v-706b7c2d>contains</option>', 7)
+                Ea('<option value="=" data-v-8f3adace>=</option><option value="!=" data-v-8f3adace>≠</option><option value="&lt;" data-v-8f3adace>&lt;</option><option value="&lt;=" data-v-8f3adace>&lt;=</option><option value="&gt;" data-v-8f3adace>&gt;</option><option value="&gt;=" data-v-8f3adace>&gt;=</option><option value="like" data-v-8f3adace>contains</option>', 7)
               ])], 512), [
                 [Rn, J.value.type]
               ])
@@ -18362,7 +18362,7 @@ const wc = { class: "trades-card" }, yc = { class: "toast-container" }, Cc = { k
   for (const [i, s] of e)
     t[i] = s;
   return t;
-}, Jc = /* @__PURE__ */ Uc(jc, [["__scopeId", "data-v-706b7c2d"]]);
+}, Jc = /* @__PURE__ */ Uc(jc, [["__scopeId", "data-v-8f3adace"]]);
 export {
   Jc as Trades,
   Jc as default
