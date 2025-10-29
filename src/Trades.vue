@@ -1254,7 +1254,7 @@ onBeforeUnmount(() => {
             class="minimize-button"
             title="Minimize Trades"
           >
-            −
+            X
           </button>
           <div v-if="showTradesColumnsPopup" ref="tradesColumnsPopupRef" class="columns-dropdown" @click.stop>
             <div class="columns-header">
