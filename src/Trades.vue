@@ -6,6 +6,8 @@ import { DateTime } from 'luxon'                // <- added
 import { TabulatorFull as Tabulator } from 'tabulator-tables'
 import { useTradesQuery, type Trade } from '@y2kfund/core/trades'
 import type { TradesProps } from './index'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.min.css'
 
 const props = withDefaults(defineProps<TradesProps>(), {
   accountId: '1',
@@ -914,23 +916,102 @@ const columns = computed(() => [
     // header filter with min/max date inputs
     headerFilter: function(cell: any, onRendered: any, success: any) {
       const container = document.createElement('div')
-      container.style.display = 'flex'
-      container.style.gap = '4px'
-      const minInput = document.createElement('input')
-      minInput.type = 'date'
-      minInput.title = 'Min'
-      minInput.style.width = '100%'
-      const maxInput = document.createElement('input')
-      maxInput.type = 'date'
-      maxInput.title = 'Max'
-      maxInput.style.width = '100%'
-      container.appendChild(minInput)
-      container.appendChild(maxInput)
-      const apply = () => {
-        success({ min: minInput.value || '', max: maxInput.value || '' })
+      container.style.position = 'relative'
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.placeholder = 'Select date range'
+      input.style.width = '100%'
+      input.style.boxSizing = 'border-box'
+      input.style.paddingRight = '28px' // space for clear button
+      container.appendChild(input)
+
+      // clear button
+      const clearBtn = document.createElement('button')
+      clearBtn.type = 'button'
+      clearBtn.innerText = '✕'
+      clearBtn.title = 'Clear'
+      clearBtn.style.position = 'absolute'
+      clearBtn.style.right = '6px'
+      clearBtn.style.top = '50%'
+      clearBtn.style.transform = 'translateY(-50%)'
+      clearBtn.style.border = 'none'
+      clearBtn.style.background = 'transparent'
+      clearBtn.style.cursor = 'pointer'
+      clearBtn.style.fontSize = '12px'
+      clearBtn.style.padding = '2px 6px'
+      clearBtn.style.display = 'none'
+      clearBtn.style.color = '#6c757d'
+      clearBtn.style.borderRadius = '3px'
+      clearBtn.addEventListener('mouseenter', () => clearBtn.style.opacity = '1')
+      clearBtn.addEventListener('mouseleave', () => clearBtn.style.opacity = '0.9')
+      container.appendChild(clearBtn)
+
+      let fp: any = null
+
+      function updateClearVisibility() {
+        const hasValue = !!input.value && input.value.trim() !== ''
+        // show only on hover OR if input has value and mouse is over container
+        if (hasValue && container.matches(':hover')) {
+          clearBtn.style.display = 'block'
+        } else {
+          clearBtn.style.display = 'none'
+        }
       }
-      minInput.addEventListener('change', apply)
-      maxInput.addEventListener('change', apply)
+
+      // show on container hover if input has value
+      container.addEventListener('mouseenter', updateClearVisibility)
+      container.addEventListener('mouseleave', updateClearVisibility)
+
+      onRendered(() => {
+        try {
+          fp = flatpickr(input, {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            allowInput: true,
+            onChange: (selectedDates: Date[]) => {
+              if (!selectedDates || selectedDates.length === 0) {
+                success({ min: '', max: '' })
+                input.value = ''
+                updateClearVisibility()
+                return
+              }
+              const min = selectedDates[0] ? selectedDates[0].toISOString().slice(0, 10) : ''
+              const max = selectedDates[1] ? selectedDates[1].toISOString().slice(0, 10) : ''
+              input.value = max ? `${min} to ${max}` : min
+              success({ min: min || '', max: max || '' })
+              updateClearVisibility()
+            },
+            onClose: () => {
+              // ensure clear visibility updated after fp closes
+              updateClearVisibility()
+            }
+          })
+        } catch (e) {
+          // fallback: if flatpickr not available, leave simple text input and parse manually
+          input.addEventListener('change', () => {
+            const val = input.value || ''
+            const parts = val.split(' to ').map(s => s.trim())
+            success({ min: parts[0] || '', max: parts[1] || '' })
+            updateClearVisibility()
+          })
+        }
+      })
+
+      // clear action
+      clearBtn.addEventListener('click', (ev) => {
+        ev.preventDefault()
+        ev.stopPropagation()
+        if (fp) {
+          try { fp.clear() } catch (err) {}
+        }
+        input.value = ''
+        success({ min: '', max: '' })
+        updateClearVisibility()
+      })
+
+      // keep clear visibility in sync on manual input
+      input.addEventListener('input', updateClearVisibility)
+
       return container
     },
     headerFilterFunc: (headerValue: any, rowValue: any) => {
@@ -945,7 +1026,6 @@ const columns = computed(() => [
       if (headerValue.max) {
         const maxTs = new Date(headerValue.max).getTime()
         if (isNaN(maxTs)) return false
-        // include the whole day for max by adding 23:59:59.999
         const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
         if (ts > maxInclusive) return false
       }
@@ -984,23 +1064,96 @@ const columns = computed(() => [
     sorter: 'date',
     headerFilter: function(cell: any, onRendered: any, success: any) {
       const container = document.createElement('div')
-      container.style.display = 'flex'
-      container.style.gap = '4px'
-      const minInput = document.createElement('input')
-      minInput.type = 'date'
-      minInput.title = 'Min'
-      minInput.style.width = '100%'
-      const maxInput = document.createElement('input')
-      maxInput.type = 'date'
-      maxInput.title = 'Max'
-      maxInput.style.width = '100%'
-      container.appendChild(minInput)
-      container.appendChild(maxInput)
-      const apply = () => {
-        success({ min: minInput.value || '', max: maxInput.value || '' })
+      container.style.position = 'relative'
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.placeholder = 'Select date range'
+      input.style.width = '100%'
+      input.style.boxSizing = 'border-box'
+      input.style.paddingRight = '28px' // space for clear button
+      container.appendChild(input)
+
+      // clear button
+      const clearBtn = document.createElement('button')
+      clearBtn.type = 'button'
+      clearBtn.innerText = '✕'
+      clearBtn.title = 'Clear'
+      clearBtn.style.position = 'absolute'
+      clearBtn.style.right = '6px'
+      clearBtn.style.top = '50%'
+      clearBtn.style.transform = 'translateY(-50%)'
+      clearBtn.style.border = 'none'
+      clearBtn.style.background = 'transparent'
+      clearBtn.style.cursor = 'pointer'
+      clearBtn.style.fontSize = '12px'
+      clearBtn.style.padding = '2px 6px'
+      clearBtn.style.display = 'none'
+      clearBtn.style.color = '#6c757d'
+      clearBtn.style.borderRadius = '3px'
+      clearBtn.addEventListener('mouseenter', () => clearBtn.style.opacity = '1')
+      clearBtn.addEventListener('mouseleave', () => clearBtn.style.opacity = '0.9')
+      container.appendChild(clearBtn)
+
+      let fp: any = null
+
+      function updateClearVisibility() {
+        const hasValue = !!input.value && input.value.trim() !== ''
+        if (hasValue && container.matches(':hover')) {
+          clearBtn.style.display = 'block'
+        } else {
+          clearBtn.style.display = 'none'
+        }
       }
-      minInput.addEventListener('change', apply)
-      maxInput.addEventListener('change', apply)
+
+      container.addEventListener('mouseenter', updateClearVisibility)
+      container.addEventListener('mouseleave', updateClearVisibility)
+
+      onRendered(() => {
+        try {
+          fp = flatpickr(input, {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            allowInput: true,
+            onChange: (selectedDates: Date[]) => {
+              if (!selectedDates || selectedDates.length === 0) {
+                success({ min: '', max: '' })
+                input.value = ''
+                updateClearVisibility()
+                return
+              }
+              const min = selectedDates[0] ? selectedDates[0].toISOString().slice(0, 10) : ''
+              const max = selectedDates[1] ? selectedDates[1].toISOString().slice(0, 10) : ''
+              input.value = max ? `${min} to ${max}` : min
+              success({ min: min || '', max: max || '' })
+              updateClearVisibility()
+            },
+            onClose: () => {
+              updateClearVisibility()
+            }
+          })
+        } catch (e) {
+          input.addEventListener('change', () => {
+            const val = input.value || ''
+            const parts = val.split(' to ').map(s => s.trim())
+            success({ min: parts[0] || '', max: parts[1] || '' })
+            updateClearVisibility()
+          })
+        }
+      })
+
+      clearBtn.addEventListener('click', (ev) => {
+        ev.preventDefault()
+        ev.stopPropagation()
+        if (fp) {
+          try { fp.clear() } catch (err) {}
+        }
+        input.value = ''
+        success({ min: '', max: '' })
+        updateClearVisibility()
+      })
+
+      input.addEventListener('input', updateClearVisibility)
+
       return container
     },
     headerFilterFunc: (headerValue: any, rowValue: any) => {
@@ -1729,6 +1882,10 @@ onBeforeUnmount(() => {
 <style>
 /* Import Tabulator CSS globally */
 @import 'tabulator-tables/dist/css/tabulator_modern.min.css';
+
+.tabulator-header-filter input {
+    padding: 2px 4px !important;
+}
 </style>
 
 <style scoped>
