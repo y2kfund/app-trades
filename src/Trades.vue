@@ -174,6 +174,20 @@ function parseTradeDate(val: any): number | null {
   return isNaN(dt.getTime()) ? null : dt.getTime()
 }
 
+function formatTradeDateForFilter(val: any): string {
+  if (!val) return ''
+  const ts = parseTradeDate(val)
+  if (ts) {
+    const dt = new Date(ts)
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+  const dt = new Date(String(val))
+  if (!isNaN(dt.getTime())) {
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+  return String(val)
+}
+
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value)
 }
@@ -373,7 +387,14 @@ function updateFilters() {
           }
         } else {
           // String columns
-          const cellVal = String(data[field] ?? '')
+          //const cellVal = String(data[field] ?? '')
+          let cellVal = ''
+          if (field === 'tradeDate' || field === 'settleDateTarget') {
+            cellVal = formatTradeDateForFilter(data[field])
+          } else {
+            cellVal = String(data[field] ?? '')
+          }
+
           if (op === 'like') {
             if (!cellVal.toLowerCase().includes(val.toLowerCase())) return false
           } else {
