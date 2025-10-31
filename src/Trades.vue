@@ -766,24 +766,21 @@ watch(tradesVisibleCols, (cols) => {
 
 // Column definitions
 const columns = computed(() => [
-  /* {
-    title: 'Trade ID',
-    field: 'tradeID',
-    minWidth: 100,
-    frozen: true,
-    sorter: 'string',
-    formatter: (cell: any) => {
-      const value = cell.getValue()
-      return value ? `<span style="font-weight: 500;">${value}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>'
-    },
-    contextMenu: createFetchedAtContextMenu()
-  }, */
   {
     title: 'Account',
     field: 'legal_entity',
     minWidth: 120,
     frozen: true,
     sorter: 'string',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const accountVal = (typeof rowValue === 'object' && rowValue !== null)
+        ? (rowValue.name || rowValue.id || '')
+        : (rowValue || '')
+      return String(accountVal).toLowerCase().includes(String(headerValue).toLowerCase())
+    },
     formatter: (cell: any) => {
       const value = cell.getValue()
       if (typeof value === 'object' && value !== null) {
@@ -804,6 +801,13 @@ const columns = computed(() => [
     minWidth: 120,
     frozen: true,
     sorter: 'string',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const symbol = String(rowValue || '')
+      return symbol.toLowerCase().includes(String(headerValue).toLowerCase())
+    },
     formatter: (cell: any) => {
       const symbol = cell.getValue()
       if (!symbol) return '<span style="color: #6c757d; font-style: italic;">N/A</span>'
@@ -832,6 +836,13 @@ const columns = computed(() => [
     field: 'buySell',
     minWidth: 80,
     sorter: 'string',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const v = String(rowValue || '')
+      return v.toLowerCase().includes(String(headerValue).toLowerCase())
+    },
     formatter: (cell: any) => {
       const value = cell.getValue()
       if (value === 'BUY') {
@@ -849,6 +860,19 @@ const columns = computed(() => [
     field: 'openCloseIndicator',
     minWidth: 100,
     sorter: 'string',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const hv = String(headerValue).toLowerCase()
+      const raw = String(rowValue ?? '').trim()
+      let display = raw
+      if (raw.toUpperCase() === 'O') display = 'OPEN'
+      if (raw.toUpperCase() === 'C') display = 'CLOSE'
+
+      // Match against both raw and display text (case-insensitive)
+      return display.toLowerCase().includes(hv) || raw.toLowerCase().includes(hv)
+    },
     formatter: (cell: any) => {
       const value = cell.getValue()
       if (value === 'O') {
@@ -866,6 +890,15 @@ const columns = computed(() => [
     field: 'assetCategory',
     minWidth: 120,
     sorter: 'string',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const assetVal = (typeof rowValue === 'object' && rowValue !== null)
+        ? (rowValue.name || rowValue.id || '')
+        : (rowValue || '')
+      return String(assetVal).toLowerCase().includes(String(headerValue).toLowerCase())
+    },
     cellClick: (e: any, cell: any) => {
       const value = cell.getValue()
       const assetName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
@@ -878,6 +911,46 @@ const columns = computed(() => [
     field: 'tradeDate',
     minWidth: 120,
     sorter: 'date',
+    // header filter with min/max date inputs
+    headerFilter: function(cell: any, onRendered: any, success: any) {
+      const container = document.createElement('div')
+      container.style.display = 'flex'
+      container.style.gap = '4px'
+      const minInput = document.createElement('input')
+      minInput.type = 'date'
+      minInput.title = 'Min'
+      minInput.style.width = '100%'
+      const maxInput = document.createElement('input')
+      maxInput.type = 'date'
+      maxInput.title = 'Max'
+      maxInput.style.width = '100%'
+      container.appendChild(minInput)
+      container.appendChild(maxInput)
+      const apply = () => {
+        success({ min: minInput.value || '', max: maxInput.value || '' })
+      }
+      minInput.addEventListener('change', apply)
+      maxInput.addEventListener('change', apply)
+      return container
+    },
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue || (!headerValue.min && !headerValue.max)) return true
+      const ts = parseTradeDate(rowValue)
+      if (!ts) return false
+      if (headerValue.min) {
+        const minTs = new Date(headerValue.min).getTime()
+        if (isNaN(minTs)) return false
+        if (ts < minTs) return false
+      }
+      if (headerValue.max) {
+        const maxTs = new Date(headerValue.max).getTime()
+        if (isNaN(maxTs)) return false
+        // include the whole day for max by adding 23:59:59.999
+        const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
+        if (ts > maxInclusive) return false
+      }
+      return true
+    },
     // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
     sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
       const ta = parseTradeDate(rowA.getData().tradeDate) || 0
@@ -909,6 +982,44 @@ const columns = computed(() => [
     field: 'settleDateTarget',
     minWidth: 140,
     sorter: 'date',
+    headerFilter: function(cell: any, onRendered: any, success: any) {
+      const container = document.createElement('div')
+      container.style.display = 'flex'
+      container.style.gap = '4px'
+      const minInput = document.createElement('input')
+      minInput.type = 'date'
+      minInput.title = 'Min'
+      minInput.style.width = '100%'
+      const maxInput = document.createElement('input')
+      maxInput.type = 'date'
+      maxInput.title = 'Max'
+      maxInput.style.width = '100%'
+      container.appendChild(minInput)
+      container.appendChild(maxInput)
+      const apply = () => {
+        success({ min: minInput.value || '', max: maxInput.value || '' })
+      }
+      minInput.addEventListener('change', apply)
+      maxInput.addEventListener('change', apply)
+      return container
+    },
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue || (!headerValue.min && !headerValue.max)) return true
+      const ts = parseTradeDate(rowValue)
+      if (!ts) return false
+      if (headerValue.min) {
+        const minTs = new Date(headerValue.min).getTime()
+        if (isNaN(minTs)) return false
+        if (ts < minTs) return false
+      }
+      if (headerValue.max) {
+        const maxTs = new Date(headerValue.max).getTime()
+        if (isNaN(maxTs)) return false
+        const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
+        if (ts > maxInclusive) return false
+      }
+      return true
+    },
     // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
     sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
       const ta = parseTradeDate(rowA.getData().tradeDate) || 0
@@ -941,6 +1052,33 @@ const columns = computed(() => [
     minWidth: 140,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'e.g. >100 or 100',
+    headerFilterFunc: (headerValue: any, rowValue: any, rowData: any) => {
+      if (!headerValue) return true
+      const rawQ = parseFloat(rowData?.quantity || 0) || 0
+      const rawM = parseFloat(rowData?.multiplier || 1) || 1
+      const effective = rawQ * rawM
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      switch (op) {
+        case '=': return effective === numVal
+        case '!=': return effective !== numVal
+        case '<': return effective < numVal
+        case '<=': return effective <= numVal
+        case '>': return effective > numVal
+        case '>=': return effective >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => {
       const row = cell.getRow().getData()
       const rawQ = row?.quantity ?? ''
@@ -965,6 +1103,31 @@ const columns = computed(() => [
     minWidth: 120,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'e.g. >10',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   },
@@ -974,6 +1137,31 @@ const columns = computed(() => [
     minWidth: 120,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'e.g. >1000',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   },  
@@ -983,6 +1171,31 @@ const columns = computed(() => [
     minWidth: 120,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'e.g. >0',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   },
@@ -992,6 +1205,31 @@ const columns = computed(() => [
     minWidth: 80,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   },
@@ -1001,6 +1239,31 @@ const columns = computed(() => [
     minWidth: 80,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     // ensure Tabulator sees a numeric value (DB stores text)
     mutator: (value: any) => {
       const n = parseFloat(value)
@@ -1020,6 +1283,31 @@ const columns = computed(() => [
     minWidth: 120,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => {
       return `<span style="color: #dc3545; font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
     },
@@ -1033,6 +1321,31 @@ const columns = computed(() => [
     minWidth: 120,
     hozAlign: 'right',
     sorter: 'number',
+    headerFilter: 'input',
+    headerFilterPlaceholder: 'Filter',
+    headerFilterFunc: (headerValue: any, rowValue: any) => {
+      if (!headerValue) return true
+      const s = String(headerValue).trim()
+      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+      let op = '='
+      let numStr = s
+      if (opMatch) {
+        op = opMatch[1]
+        numStr = s.slice(op.length).trim()
+      }
+      const numVal = parseFloat(numStr)
+      if (isNaN(numVal)) return false
+      const val = parseFloat(rowValue) || 0
+      switch (op) {
+        case '=': return val === numVal
+        case '!=': return val !== numVal
+        case '<': return val < numVal
+        case '<=': return val <= numVal
+        case '>': return val > numVal
+        case '>=': return val >= numVal
+        default: return false
+      }
+    },
     formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
     contextMenu: createFetchedAtContextMenu()
   }
