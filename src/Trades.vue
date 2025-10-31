@@ -11,7 +11,8 @@ const props = withDefaults(defineProps<TradesProps>(), {
   accountId: '1',
   highlightPnL: false,
   showHeaderLink: false,
-  userId: null
+  userId: null,
+  window: null
 })
 
 const emit = defineEmits<{ 
@@ -184,7 +185,7 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
     if (accountFilter.value === value) {
       accountFilter.value = null
       const url = new URL(window.location.href)
-      url.searchParams.delete('all_cts_clientId')
+      url.searchParams.delete(`${props.window}_all_cts_clientId`)
       window.history.replaceState({}, '', url.toString())
       // Emit event to other components
       if (eventBus) {
@@ -196,7 +197,7 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
     } else {
       accountFilter.value = value
       const url = new URL(window.location.href)
-      url.searchParams.set('all_cts_clientId', value)
+      url.searchParams.set(`${props.window}_all_cts_clientId`, value)
       window.history.replaceState({}, '', url.toString())
       // Emit event to other components
       if (eventBus) {
@@ -218,9 +219,9 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
     // Update URL
     const url = new URL(window.location.href)
     if (symbolTagFilters.value.length > 0) {
-      url.searchParams.set('all_cts_fi', symbolTagFilters.value.join(','))
+      url.searchParams.set(`${props.window}_all_cts_fi`, symbolTagFilters.value.join(','))
     } else {
-      url.searchParams.delete('all_cts_fi')
+      url.searchParams.delete(`${props.window}_all_cts_fi`)
     }
     window.history.replaceState({}, '', url.toString())
     
@@ -238,13 +239,13 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
     if (assetFilter.value === value) {
       assetFilter.value = null
       const url = new URL(window.location.href)
-      url.searchParams.delete('all_cts_asset')
+      url.searchParams.delete(`${props.window}_all_cts_asset`)
       window.history.replaceState({}, '', url.toString())
       if (eventBus) eventBus.emit('asset-filter-changed', { asset: null, source: 'trades' })
     } else {
       assetFilter.value = value
       const url = new URL(window.location.href)
-      url.searchParams.set('all_cts_asset', value)
+      url.searchParams.set(`${props.window}_all_cts_asset`, value)
       window.history.replaceState({}, '', url.toString())
       if (eventBus) eventBus.emit('asset-filter-changed', { asset: value, source: 'trades' })
     }
@@ -255,13 +256,13 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
     if (quantityFilter.value !== null && Math.abs((quantityFilter.value || 0) - num) < 1e-9) {
       quantityFilter.value = null
       const url = new URL(window.location.href)
-      url.searchParams.delete('all_cts_qty')
+      url.searchParams.delete(`${props.window}_all_cts_qty`)
       window.history.replaceState({}, '', url.toString())
       if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
     } else {
       quantityFilter.value = num
       const url = new URL(window.location.href)
-      url.searchParams.set('all_cts_qty', String(num))
+      url.searchParams.set(`${props.window}_all_cts_qty`, String(num))
       window.history.replaceState({}, '', url.toString())
       if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: num, source: 'trades' })
     }
@@ -272,6 +273,21 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
 const accountFilter = ref<string | null>(null)
 const assetFilter = ref<string | null>(null)
 const quantityFilter = ref<number | null>(null)
+
+function writeTradesSortToUrl(sortField: string, sortDir: string) {
+  const url = new URL(window.location.href)
+  url.searchParams.set(`${props.window}_trades_sort`, `${sortField}:${sortDir}`)
+  window.history.replaceState({}, '', url.toString())
+}
+
+function parseTradesSortFromUrl(): { field: string, dir: string } | null {
+  const url = new URL(window.location.href)
+  const sortParam = url.searchParams.get(`${props.window}_trades_sort`)
+  if (!sortParam) return null
+  const [field, dir] = sortParam.split(':')
+  if (!field || !dir) return null
+  return { field, dir }
+}
 
 // Update filters to work with table
 function updateFilters() {
@@ -416,7 +432,7 @@ function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quant
   if (field === 'legal_entity') {
     accountFilter.value = null
     const url = new URL(window.location.href)
-    url.searchParams.delete('all_cts_clientId')
+    url.searchParams.delete(`${props.window}_all_cts_clientId`)
     window.history.replaceState({}, '', url.toString())
     // Emit event to other components
     if (eventBus) {
@@ -428,18 +444,18 @@ function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quant
   } else if (field === 'symbol') {
     symbolTagFilters.value = []
     const url = new URL(window.location.href)
-    url.searchParams.delete('all_cts_fi')
+    url.searchParams.delete(`${props.window}_all_cts_fi`)
     window.history.replaceState({}, '', url.toString())
   } else if (field === 'assetCategory') {
     assetFilter.value = null
     const url = new URL(window.location.href)
-    url.searchParams.delete('all_cts_asset')
+    url.searchParams.delete(`${props.window}_all_cts_asset`)
     window.history.replaceState({}, '', url.toString())
     if (eventBus) eventBus.emit('asset-filter-changed', { asset: null, source: 'trades' })
   } else if (field === 'quantity') {
     quantityFilter.value = null
     const url = new URL(window.location.href)
-    url.searchParams.delete('all_cts_qty')
+    url.searchParams.delete(`${props.window}_all_cts_qty`)
     window.history.replaceState({}, '', url.toString())
     if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
   }
@@ -452,10 +468,10 @@ function clearAllFilters() {
   assetFilter.value = null
   quantityFilter.value = null
   const url = new URL(window.location.href)
-  url.searchParams.delete('all_cts_clientId')
-  url.searchParams.delete('all_cts_fi')
-  url.searchParams.delete('all_cts_asset')
-  url.searchParams.delete('all_cts_qty')
+  url.searchParams.delete(`${props.window}_all_cts_clientId`)
+  url.searchParams.delete(`${props.window}_all_cts_fi`)
+  url.searchParams.delete(`${props.window}_all_cts_asset`)
+  url.searchParams.delete(`${props.window}_all_cts_qty`)
   window.history.replaceState({}, '', url.toString())
   if (eventBus) {
     eventBus.emit('account-filter-changed', { accountId: null, source: 'trades' })
@@ -468,11 +484,11 @@ function clearAllFilters() {
 // URL synchronization for filters
 function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[]; asset?: string; quantity?: number } {
   const url = new URL(window.location.href)
-  const account = url.searchParams.get('all_cts_clientId') || undefined
-  const symbolParam = url.searchParams.get('all_cts_fi') || undefined
+  const account = url.searchParams.get(`${props.window}_all_cts_clientId`) || undefined
+  const symbolParam = url.searchParams.get(`${props.window}_all_cts_fi`) || undefined
   const symbol = symbolParam ? symbolParam.split(',').filter(Boolean) : undefined
-  const asset = url.searchParams.get('all_cts_asset') || undefined
-  const qtyParam = url.searchParams.get('all_cts_qty') || undefined
+  const asset = url.searchParams.get(`${props.window}_all_cts_asset`) || undefined
+  const qtyParam = url.searchParams.get(`${props.window}_all_cts_qty`) || undefined
   const quantity = qtyParam ? Number(qtyParam) : undefined
   return { legal_entity: account, symbol, asset, quantity }
 }
@@ -485,9 +501,9 @@ function handleExternalAccountFilter(payload: { accountId: string | null, source
   accountFilter.value = payload.accountId
   const url = new URL(window.location.href)
   if (payload.accountId) {
-    url.searchParams.set('all_cts_clientId', payload.accountId)
+    url.searchParams.set(`${props.window}_all_cts_clientId`, payload.accountId)
   } else {
-    url.searchParams.delete('all_cts_clientId')
+    url.searchParams.delete(`${props.window}_all_cts_clientId`)
   }
   window.history.replaceState({}, '', url.toString())
   updateFilters()
@@ -501,9 +517,9 @@ function handleExternalSymbolFilter(payload: { symbolTags: string[], source: str
   symbolTagFilters.value = payload.symbolTags
   const url = new URL(window.location.href)
   if (payload.symbolTags.length > 0) {
-    url.searchParams.set('all_cts_fi', payload.symbolTags.join(','))
+    url.searchParams.set(`${props.window}_all_cts_fi`, payload.symbolTags.join(','))
   } else {
-    url.searchParams.delete('all_cts_fi')
+    url.searchParams.delete(`${props.window}_all_cts_fi`)
   }
   window.history.replaceState({}, '', url.toString())
   updateFilters()
@@ -513,8 +529,8 @@ function handleExternalAssetFilter(payload: { asset: string | null, source: stri
   if (payload.source === 'trades') return
   assetFilter.value = payload.asset
   const url = new URL(window.location.href)
-  if (payload.asset) url.searchParams.set('all_cts_asset', payload.asset)
-  else url.searchParams.delete('all_cts_asset')
+  if (payload.asset) url.searchParams.set(`${props.window}_all_cts_asset`, payload.asset)
+  else url.searchParams.delete(`${props.window}_all_cts_asset`)
   window.history.replaceState({}, '', url.toString())
   updateFilters()
 }
@@ -523,8 +539,8 @@ function handleExternalQuantityFilter(payload: { quantity: number | null, source
   if (payload.source === 'trades') return
   quantityFilter.value = payload.quantity
   const url = new URL(window.location.href)
-  if (payload.quantity !== null && payload.quantity !== undefined) url.searchParams.set('all_cts_qty', String(payload.quantity))
-  else url.searchParams.delete('all_cts_qty')
+  if (payload.quantity !== null && payload.quantity !== undefined) url.searchParams.set(`${props.window}_all_cts_qty`, String(payload.quantity))
+  else url.searchParams.delete(`${props.window}_all_cts_qty`)
   window.history.replaceState({}, '', url.toString())
   updateFilters()
 }
@@ -535,15 +551,15 @@ const appNameInput = ref('')
 
 function parseAppNameFromUrl(): string {
   const url = new URL(window.location.href)
-  return url.searchParams.get('trades_app_name') || 'Trades'
+  return url.searchParams.get(`${props.window}_trades_app_name`) || 'Trades'
 }
 
 function writeAppNameToUrl(name: string) {
   const url = new URL(window.location.href)
   if (name && name.trim() && name !== 'Trades') {
-    url.searchParams.set('trades_app_name', name.trim())
+    url.searchParams.set(`${props.window}_trades_app_name`, name.trim())
   } else {
-    url.searchParams.delete('trades_app_name')
+    url.searchParams.delete(`${props.window}_trades_app_name`)
   }
   window.history.replaceState({}, '', url.toString())
 }
@@ -621,6 +637,12 @@ window.addEventListener('popstate', () => {
     clearUniversalFilter()
   }
 
+  // Restore sort from URL
+  const sortFromUrl = parseTradesSortFromUrl()
+  if (tabulator && sortFromUrl) {
+    tabulator.setSort(sortFromUrl.field, sortFromUrl.dir)
+  }
+
   updateFilters()
 })
 
@@ -667,7 +689,7 @@ const allTradesColumnOptions: Array<{ field: TradesColumnField; label: string }>
 // URL param helpers for column visibility
 function parseTradesVisibleColsFromUrl(): TradesColumnField[] {
   const url = new URL(window.location.href)
-  const colsParam = url.searchParams.get('trades_cols')
+  const colsParam = url.searchParams.get(`${props.window}_trades_cols`)
   if (!colsParam) {
     return allTradesColumnOptions.map(c => c.field)
   }
@@ -679,7 +701,7 @@ function parseTradesVisibleColsFromUrl(): TradesColumnField[] {
 
 function writeTradesVisibleColsToUrl(cols: TradesColumnField[]) {
   const url = new URL(window.location.href)
-  url.searchParams.set('trades_cols', cols.join('-and-'))
+  url.searchParams.set(`${props.window}_trades_cols`, cols.join('-and-'))
   window.history.replaceState({}, '', url.toString())
 }
 
@@ -1007,10 +1029,20 @@ function initializeTabulator() {
 
   isTabulatorReady.value = false
 
+  // --- Restore sort from URL ---
+  let initialSort = []
+  const sortFromUrl = parseTradesSortFromUrl()
+  if (sortFromUrl) {
+    initialSort = [{ column: sortFromUrl.field, dir: sortFromUrl.dir }]
+  } else {
+    // Default sort by tradeDate desc
+    initialSort = [{ column: 'tradeDate', dir: 'desc' }]
+  }
+
   const tabulatorConfig: any = {
-  data: q.data.value || [],
-  columns: columns.value,
-  layout: 'fitColumns',
+    data: q.data.value || [],
+    columns: columns.value,
+    layout: 'fitColumns',
     placeholder: 'No trades available',
     virtualDom: false,
     rowClick: (e: any, row: any) => {
@@ -1019,20 +1051,39 @@ function initializeTabulator() {
       if (props.onRowClick) {
         props.onRowClick(data)
       }
-    }
+    },
+    initialSort,
+    sortChanged: (sorters: any[]) => {
+      if (sorters && sorters.length > 0) {
+        writeTradesSortToUrl(sorters[0].field, sorters[0].dir)
+      } else {
+        // If no sorters, remove param
+        const url = new URL(window.location.href)
+        url.searchParams.delete(`${props.window}_trades_sort`)
+        window.history.replaceState({}, '', url.toString())
+      }
+    },
   }
 
   try {
     tabulator = new Tabulator(tableDiv.value, tabulatorConfig)
-    
+
     tabulator.on('tableBuilt', function() {
       isTabulatorReady.value = true
-      // Apply any filters that were set before the table was ready
       updateFilters()
-      // Update total trades count
       if (tabulator) {
         totalTrades.value = tabulator.getDataCount('active') || 0
       }
+
+      const headers = tableDiv.value?.querySelectorAll('.tabulator-col')
+      headers?.forEach(header => {
+        header.addEventListener('click', () => {
+          const sortedCol = tabulator?.getSorters?.()[0]
+          if (sortedCol) {
+            writeTradesSortToUrl(sortedCol.field, sortedCol.dir)
+          }
+        })
+      })
     })
   } catch (error) {
     console.error('Error creating Tabulator:', error)
@@ -1147,22 +1198,22 @@ function clearUniversalFilter() {
 function writeUniversalFilterToUrl() {
   const url = new URL(window.location.href)
   if (universalFilter.value.field && universalFilter.value.value !== '') {
-    url.searchParams.set('uf_field', universalFilter.value.field)
-    url.searchParams.set('uf_type', universalFilter.value.type)
-    url.searchParams.set('uf_value', universalFilter.value.value)
+    url.searchParams.set(`${props.window}_uf_field`, universalFilter.value.field)
+    url.searchParams.set(`${props.window}_uf_type`, universalFilter.value.type)
+    url.searchParams.set(`${props.window}_uf_value`, universalFilter.value.value)
   } else {
-    url.searchParams.delete('uf_field')
-    url.searchParams.delete('uf_type')
-    url.searchParams.delete('uf_value')
+    url.searchParams.delete(`${props.window}_uf_field`)
+    url.searchParams.delete(`${props.window}_uf_type`)
+    url.searchParams.delete(`${props.window}_uf_value`)
   }
   window.history.replaceState({}, '', url.toString())
 }
 
 function parseUniversalFilterFromUrl() {
   const url = new URL(window.location.href)
-  const field = url.searchParams.get('uf_field') || ''
-  const type = url.searchParams.get('uf_type') || '='
-  const value = url.searchParams.get('uf_value') || ''
+  const field = url.searchParams.get(`${props.window}_uf_field`) || ''
+  const type = url.searchParams.get(`${props.window}_uf_type`) || '='
+  const value = url.searchParams.get(`${props.window}_uf_value`) || ''
   return { field, type, value }
 }
 
