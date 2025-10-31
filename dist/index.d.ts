@@ -7,4 +7,5 @@ export interface TradesProps {
     onRowClick?: (row: any) => void;
     showHeaderLink?: boolean;
     userId?: string | null;
+    window?: string | null;
 }
