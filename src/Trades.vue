@@ -347,73 +347,6 @@ function updateFilters() {
         if (!hasAllTags) return false
       }
 
-      // --- Universal Filter Logic ---
-      if (universalFilter.value.field && universalFilter.value.value !== '') {
-        const field = universalFilter.value.field
-        const op = universalFilter.value.type
-        const val = universalFilter.value.value
-
-        // Numeric columns
-        if (field === 'quantity') {
-          const q = parseFloat(data?.quantity || 0) || 0
-          const m = parseFloat(data?.multiplier || 1) || 1
-          const effective = q * m
-          const numVal = parseFloat(val)
-          switch (op) {
-            case '=': if (!(effective === numVal)) return false; break
-            case '!=': if (!(effective !== numVal)) return false; break
-            case '<': if (!(effective < numVal)) return false; break
-            case '<=': if (!(effective <= numVal)) return false; break
-            case '>': if (!(effective > numVal)) return false; break
-            case '>=': if (!(effective >= numVal)) return false; break
-            default: return false
-          }
-        } else if (
-          field === 'tradePrice' ||
-          field === 'tradeMoney' ||
-          field === 'netCash' ||
-          field === 'mtmPnl' ||
-          field === 'fifoPnlRealized' ||
-          field === 'ibCommission' ||
-          field === 'closePrice'
-        ) {
-          const num = parseFloat(data[field])
-          const numVal = parseFloat(val)
-          switch (op) {
-            case '=': if (!(num === numVal)) return false; break
-            case '!=': if (!(num !== numVal)) return false; break
-            case '<': if (!(num < numVal)) return false; break
-            case '<=': if (!(num <= numVal)) return false; break
-            case '>': if (!(num > numVal)) return false; break
-            case '>=': if (!(num >= numVal)) return false; break
-            default: return false
-          }
-        } else {
-          // String columns
-          //const cellVal = String(data[field] ?? '')
-          let cellVal = ''
-          if (field === 'tradeDate' || field === 'settleDateTarget') {
-            cellVal = formatTradeDateForFilter(data[field])
-          } else {
-            cellVal = String(data[field] ?? '')
-          }
-
-          if (op === 'like') {
-            if (!cellVal.toLowerCase().includes(val.toLowerCase())) return false
-          } else {
-            switch (op) {
-              case '=': if (!(cellVal === val)) return false; break
-              case '!=': if (!(cellVal !== val)) return false; break
-              case '<': if (!(cellVal < val)) return false; break
-              case '<=': if (!(cellVal <= val)) return false; break
-              case '>': if (!(cellVal > val)) return false; break
-              case '>=': if (!(cellVal >= val)) return false; break
-              default: return false
-            }
-          }
-        }
-      }
-
       return true
     })
 
@@ -653,15 +586,6 @@ window.addEventListener('popstate', () => {
   symbolTagFilters.value = filters.symbol || []
   assetFilter.value = filters.asset || null
   quantityFilter.value = filters.quantity ?? null
-
-  // Restore universal filter from URL
-  const uf = parseUniversalFilterFromUrl()
-  universalFilter.value = uf
-  if (uf.field && uf.value !== '') {
-    applyUniversalFilter()
-  } else {
-    clearUniversalFilter()
-  }
 
   // Restore sort from URL
   const sortFromUrl = parseTradesSortFromUrl()
@@ -1681,14 +1605,6 @@ watch([() => q.isSuccess.value, tableDiv], async ([isSuccess, divRef]) => {
     isTableInitialized.value = true
     // Update total trades count
     totalTrades.value = q.data.value?.length || 0
-
-    // Restore universal filter from URL after Tabulator is ready
-    const uf = parseUniversalFilterFromUrl()
-    if (uf.field && uf.value !== '') {
-      universalFilter.value = uf
-      await nextTick()
-      applyUniversalFilter()
-    }
   }
 }, { immediate: true })
 
@@ -1756,57 +1672,6 @@ function formatExpiryFromYyMmDd(code: string): string {
   return `20${yy}-${mm}-${dd}`
 }
 
-const universalFilter = ref<{ field: string, type: string, value: string }>({
-  field: '',
-  type: '=',
-  value: ''
-})
-
-function applyUniversalFilter() {
-  if (!tabulator || !isTabulatorReady.value) return
-  tabulator.clearFilter(true)
-  writeUniversalFilterToUrl()
-  updateFilters()
-  nextTick(() => {
-    if (tabulator) totalTrades.value = tabulator.getDataCount('active') || 0
-  })
-}
-
-function clearUniversalFilter() {
-  universalFilter.value = { field: '', type: '=', value: '' }
-  writeUniversalFilterToUrl()
-  updateFilters()
-}
-
-function writeUniversalFilterToUrl() {
-  const url = new URL(window.location.href)
-  if (universalFilter.value.field && universalFilter.value.value !== '') {
-    url.searchParams.set(`${props.window}_uf_field`, universalFilter.value.field)
-    url.searchParams.set(`${props.window}_uf_type`, universalFilter.value.type)
-    url.searchParams.set(`${props.window}_uf_value`, universalFilter.value.value)
-  } else {
-    url.searchParams.delete(`${props.window}_uf_field`)
-    url.searchParams.delete(`${props.window}_uf_type`)
-    url.searchParams.delete(`${props.window}_uf_value`)
-  }
-  window.history.replaceState({}, '', url.toString())
-}
-
-function parseUniversalFilterFromUrl() {
-  const url = new URL(window.location.href)
-  const field = url.searchParams.get(`${props.window}_uf_field`) || ''
-  const type = url.searchParams.get(`${props.window}_uf_type`) || '='
-  const value = url.searchParams.get(`${props.window}_uf_value`) || ''
-  return { field, type, value }
-}
-
-const showUniversalFilterBar = ref(
-  !!(universalFilter.value.field && universalFilter.value.value)
-)
-function toggleUniversalFilterBar() {
-  showUniversalFilterBar.value = !showUniversalFilterBar.value
-}
-
 // Cleanup
 onBeforeUnmount(() => {
   if (tabulator) {
@@ -1862,15 +1727,6 @@ onBeforeUnmount(() => {
         </h2>
         <div class="trades-tools">
           <div class="trades-count">{{ totalTrades }} trades</div>
-          <button
-            class="filter-btn"
-            @click="toggleUniversalFilterBar"
-            :title="showUniversalFilterBar ? 'Hide Filter' : 'Show Filter'"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 5h18M6 10h12M10 15h4" stroke="#007bff" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>          
           <button
             ref="tradesColumnsBtnRef"
             class="columns-btn"
@@ -1991,35 +1847,6 @@ onBeforeUnmount(() => {
           </span>
           <button class="btn-clear-all" @click="clearAllFilters">Clear all</button>
         </div>
-      </div>
-
-      <!-- Add this above your Tabulator table in the template -->
-      <div v-if="showUniversalFilterBar || (universalFilter.field && universalFilter.value)" class="universal-filter-bar" style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
-        <label>
-          Field:
-          <select v-model="universalFilter.field" style="margin-left: 0.25rem;">
-            <option disabled value="">Select</option>
-            <option v-for="col in allTradesColumnOptions" :key="col.field" :value="col.field">{{ col.label }}</option>
-          </select>
-        </label>
-        <label>
-          Type:
-          <select v-model="universalFilter.type" style="margin-left: 0.25rem;">
-            <option value="=">=</option>
-            <option value="!=">≠</option>
-            <option value="<">&lt;</option>
-            <option value="<=">&lt;=</option>
-            <option value=">">&gt;</option>
-            <option value=">=">&gt;=</option>
-            <option value="like">contains</option>
-          </select>
-        </label>
-        <label>
-          Value:
-          <input v-model="universalFilter.value" style="margin-left: 0.25rem; width: 120px;" @keyup.enter="applyUniversalFilter" />
-        </label>
-        <button @click="applyUniversalFilter" style="margin-left: 0.5rem;">Apply Filter</button>
-        <button @click="clearUniversalFilter" style="margin-left: 0.25rem;">Clear</button>
       </div>
 
       <!-- Tabulator table -->
@@ -2555,32 +2382,6 @@ onBeforeUnmount(() => {
 }
 .btn-done:active {
   background: #004085;
-}
-.filter-btn {
-    background: none;
-    cursor: pointer;
-    transition: background .15s;
-    border-radius: 4px;
-    width: auto;
-    vertical-align: middle;
-    display: inline-flex;
-    border: 1px solid #dee2e6;
-    padding: 6px 6px;
-}
-.filter-btn:hover {
-  background: #f1f3f5;
-}
-.universal-filter-bar button {
-    width: auto;
-    padding: 5px 7px;
-    font-size: 0.9rem;
-}
-.universal-filter-bar input, .universal-filter-bar select {
-    width: auto;
-    padding: 4px 5px;
-}
-.universal-filter-bar label {
-    margin-bottom: 0;
 }
 /* Rename Account Dialog Styles */
 .rename-dialog-backdrop {
