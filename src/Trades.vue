@@ -601,6 +601,7 @@ function saveAppName() {
 
 onMounted(async () => {
   appName.value = parseAppNameFromUrl()
+  columnRenames.value = parseColumnRenamesFromUrl()
   // Initialize filters from URL
   const filters = parseFiltersFromUrl()
   if (filters.legal_entity) accountFilter.value = filters.legal_entity
@@ -645,6 +646,7 @@ onBeforeUnmount(() => {
 
 window.addEventListener('popstate', () => {
   appName.value = parseAppNameFromUrl()
+  columnRenames.value = parseColumnRenamesFromUrl()
 
   const filters = parseFiltersFromUrl()
   accountFilter.value = filters.legal_entity || null
@@ -710,6 +712,9 @@ const allTradesColumnOptions: Array<{ field: TradesColumnField; label: string }>
   { field: 'closePrice', label: 'Close Price' }
 ]
 
+type ColumnRenames = Partial<Record<TradesColumnField, string>>
+const columnRenames = ref<ColumnRenames>({})
+
 // URL param helpers for column visibility
 function parseTradesVisibleColsFromUrl(): TradesColumnField[] {
   const url = new URL(window.location.href)
@@ -733,6 +738,105 @@ const tradesVisibleCols = ref<TradesColumnField[]>(parseTradesVisibleColsFromUrl
 
 function isTradesColVisible(field: TradesColumnField): boolean {
   return tradesVisibleCols.value.includes(field)
+}
+
+function parseColumnRenamesFromUrl(): ColumnRenames {
+  const url = new URL(window.location.href)
+  const param = url.searchParams.get(`${props.window}_trades_col_renames`)
+  if (!param) return {}
+  try {
+    const pairs = param.split('-and-')
+    const renames: ColumnRenames = {}
+    pairs.forEach(pair => {
+      const [field, ...rest] = pair.split(':')
+      if (field && rest.length) {
+        renames[field as TradesColumnField] = decodeURIComponent(rest.join(':'))
+      }
+    })
+    return renames
+  } catch {
+    return {}
+  }
+}
+
+function writeColumnRenamesToUrl(renames: ColumnRenames) {
+  const url = new URL(window.location.href)
+  const pairs = Object.entries(renames)
+    .filter(([_, name]) => name && name.trim())
+    .map(([field, name]) => `${field}:${encodeURIComponent(name)}`)
+    .join('-and-')
+  if (pairs) {
+    url.searchParams.set(`${props.window}_trades_col_renames`, pairs)
+  } else {
+    url.searchParams.delete(`${props.window}_trades_col_renames`)
+  }
+  window.history.replaceState({}, '', url.toString())
+}
+
+// Add dialog state
+const showColRenameDialog = ref(false)
+const colRenameField = ref<TradesColumnField | null>(null)
+const colRenameValue = ref('')
+
+function openColRenameDialog(field: TradesColumnField, current: string) {
+  colRenameField.value = field
+  colRenameValue.value = current
+  showColRenameDialog.value = true
+}
+
+function saveColRename() {
+  if (colRenameField.value) {
+    columnRenames.value = {
+      ...columnRenames.value,
+      [colRenameField.value]: colRenameValue.value.trim()
+    }
+    writeColumnRenamesToUrl(columnRenames.value)
+    showColRenameDialog.value = false
+    nextTick(() => initializeTabulator())
+  }
+}
+
+function cancelColRename() {
+  showColRenameDialog.value = false
+}
+
+function getColLabel(field: TradesColumnField) {
+  const opt = allTradesColumnOptions.find(c => c.field === field)
+  return columnRenames.value[field] || (opt?.label ?? field)
+}
+
+// Add reorder functions
+const dragIndex = ref<number | null>(null)
+
+function handleDragStart(index: number) {
+  dragIndex.value = index
+}
+
+function handleDragOver(event: DragEvent) {
+  event.preventDefault()
+}
+
+function handleDrop(index: number) {
+  if (dragIndex.value === null || dragIndex.value === index) return
+  const cols = [...tradesVisibleCols.value]
+  const [moved] = cols.splice(dragIndex.value, 1)
+  cols.splice(index, 0, moved)
+  tradesVisibleCols.value = cols
+  dragIndex.value = null
+}
+
+function moveColumnUp(idx: number) {
+  if (idx <= 0) return
+  const cols = [...tradesVisibleCols.value]
+  ;[cols[idx - 1], cols[idx]] = [cols[idx], cols[idx - 1]]
+  tradesVisibleCols.value = cols
+}
+
+function moveColumnDown(idx: number) {
+  if (idx >= tradesVisibleCols.value.length - 1) return
+  const cols = [...tradesVisibleCols.value]
+  ;[cols[idx], cols[idx + 1]] = [cols[idx + 1], cols[idx]]
+  tradesVisibleCols.value = cols
 }
 
 // Popup state
@@ -768,742 +872,733 @@ watch(tradesVisibleCols, (cols) => {
 }, { deep: true })
 
 // Column definitions
-const columns = computed(() => [
-  {
-    title: 'Account',
-    field: 'legal_entity',
-    minWidth: 120,
-    frozen: true,
-    sorter: 'string',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const accountVal = (typeof rowValue === 'object' && rowValue !== null)
-        ? (rowValue.name || rowValue.id || '')
-        : (rowValue || '')
-      return String(accountVal).toLowerCase().includes(String(headerValue).toLowerCase())
-    },
-    formatter: (cell: any) => {
-      const value = cell.getValue()
-      if (typeof value === 'object' && value !== null) {
-        return value.name || value.id || ''
-      }
-      return value ? `<span style="font-weight: 500;">${value}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>'
-    },
-    cellClick: (e: any, cell: any) => {
-      const value = cell.getValue()
-      const accountName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
-      handleCellFilterClick('legal_entity', accountName)
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Financial Instrument',
-    field: 'symbol',
-    minWidth: 120,
-    frozen: true,
-    sorter: 'string',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const symbol = String(rowValue || '')
-      return symbol.toLowerCase().includes(String(headerValue).toLowerCase())
-    },
-    formatter: (cell: any) => {
-      const symbol = cell.getValue()
-      if (!symbol) return '<span style="color: #6c757d; font-style: italic;">N/A</span>'
-      
-      const tags = extractTagsFromSymbol(symbol)
-      const selectedTags = symbolTagFilters.value
-      
-      return tags.map(tag => {
-        const isSelected = selectedTags.includes(tag)
-        return `<span class="fi-tag" data-tag="${tag}">${tag}</span>`
-      }).join(' ')
-    },
-    cellClick: (e: any, cell: any) => {
-      const target = e.target as HTMLElement
-      if (target.classList.contains('fi-tag')) {
-        const clickedTag = target.getAttribute('data-tag')
-        if (clickedTag) {
-          handleCellFilterClick('symbol', clickedTag)
+const columns = computed(() => {
+  // Create a map of all column definitions by field name
+  const columnMap = new Map<TradesColumnField, any>([
+    ['legal_entity', {
+      title: getColLabel('legal_entity'),
+      field: 'legal_entity',
+      minWidth: 120,
+      frozen: true,
+      sorter: 'string',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const accountVal = (typeof rowValue === 'object' && rowValue !== null)
+          ? (rowValue.name || rowValue.id || '')
+          : (rowValue || '')
+        return String(accountVal).toLowerCase().includes(String(headerValue).toLowerCase())
+      },
+      formatter: (cell: any) => {
+        const value = cell.getValue()
+        if (typeof value === 'object' && value !== null) {
+          return value.name || value.id || ''
         }
-      }
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Side',
-    field: 'buySell',
-    minWidth: 80,
-    sorter: 'string',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const v = String(rowValue || '')
-      return v.toLowerCase().includes(String(headerValue).toLowerCase())
-    },
-    formatter: (cell: any) => {
-      const value = cell.getValue()
-      if (value === 'BUY') {
-        return `<span style="color: #28a745; font-weight: bold;">BUY</span>`
-      }
-      if (value === 'SELL') {
-        return `<span style="color: #dc3545; font-weight: bold;">SELL</span>`
-      }
-      return value
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Open / Close',
-    field: 'openCloseIndicator',
-    minWidth: 100,
-    sorter: 'string',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const hv = String(headerValue).toLowerCase()
-      const raw = String(rowValue ?? '').trim()
-      let display = raw
-      if (raw.toUpperCase() === 'O') display = 'OPEN'
-      if (raw.toUpperCase() === 'C') display = 'CLOSE'
-
-      // Match against both raw and display text (case-insensitive)
-      return display.toLowerCase().includes(hv) || raw.toLowerCase().includes(hv)
-    },
-    formatter: (cell: any) => {
-      const value = cell.getValue()
-      if (value === 'O') {
-        return `<span style="color: #17a2b8; font-weight: bold;">OPEN</span>`
-      }
-      if (value === 'C') {
-        return `<span style="color: #6f42c1; font-weight: bold;">CLOSE</span>`
-      }
-      return value
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Asset Class',
-    field: 'assetCategory',
-    minWidth: 120,
-    sorter: 'string',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const assetVal = (typeof rowValue === 'object' && rowValue !== null)
-        ? (rowValue.name || rowValue.id || '')
-        : (rowValue || '')
-      return String(assetVal).toLowerCase().includes(String(headerValue).toLowerCase())
-    },
-    cellClick: (e: any, cell: any) => {
-      const value = cell.getValue()
-      const assetName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
-      if (assetName) handleCellFilterClick('assetCategory', assetName)
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Trade Date',
-    field: 'tradeDate',
-    minWidth: 120,
-    sorter: 'date',
-    // header filter with min/max date inputs
-    headerFilter: function(cell: any, onRendered: any, success: any) {
-      const container = document.createElement('div')
-      container.style.position = 'relative'
-      const input = document.createElement('input')
-      input.type = 'text'
-      input.placeholder = 'Select date range'
-      input.style.width = '100%'
-      input.style.boxSizing = 'border-box'
-      input.style.paddingRight = '28px' // space for clear button
-      container.appendChild(input)
-
-      // clear button
-      const clearBtn = document.createElement('button')
-      clearBtn.type = 'button'
-      clearBtn.innerText = '✕'
-      clearBtn.title = 'Clear'
-      clearBtn.style.position = 'absolute'
-      clearBtn.style.right = '6px'
-      clearBtn.style.top = '50%'
-      clearBtn.style.transform = 'translateY(-50%)'
-      clearBtn.style.border = 'none'
-      clearBtn.style.background = 'transparent'
-      clearBtn.style.cursor = 'pointer'
-      clearBtn.style.fontSize = '12px'
-      clearBtn.style.padding = '2px 6px'
-      clearBtn.style.display = 'none'
-      clearBtn.style.color = '#6c757d'
-      clearBtn.style.borderRadius = '3px'
-      clearBtn.addEventListener('mouseenter', () => clearBtn.style.opacity = '1')
-      clearBtn.addEventListener('mouseleave', () => clearBtn.style.opacity = '0.9')
-      container.appendChild(clearBtn)
-
-      let fp: any = null
-
-      function updateClearVisibility() {
-        const hasValue = !!input.value && input.value.trim() !== ''
-        // show only on hover OR if input has value and mouse is over container
-        if (hasValue && container.matches(':hover')) {
-          clearBtn.style.display = 'block'
-        } else {
-          clearBtn.style.display = 'none'
+        return value ? `<span style="font-weight: 500;">${value}</span>` : '<span style="color: #6c757d; font-style: italic;">N/A</span>'
+      },
+      cellClick: (e: any, cell: any) => {
+        const value = cell.getValue()
+        const accountName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
+        handleCellFilterClick('legal_entity', accountName)
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['symbol', {
+      title: getColLabel('symbol'),
+      field: 'symbol',
+      minWidth: 120,
+      frozen: true,
+      sorter: 'string',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const symbol = String(rowValue || '')
+        return symbol.toLowerCase().includes(String(headerValue).toLowerCase())
+      },
+      formatter: (cell: any) => {
+        const symbol = cell.getValue()
+        if (!symbol) return '<span style="color: #6c757d; font-style: italic;">N/A</span>'
+        
+        const tags = extractTagsFromSymbol(symbol)
+        const selectedTags = symbolTagFilters.value
+        
+        return tags.map(tag => {
+          const isSelected = selectedTags.includes(tag)
+          return `<span class="fi-tag" data-tag="${tag}">${tag}</span>`
+        }).join(' ')
+      },
+      cellClick: (e: any, cell: any) => {
+        const target = e.target as HTMLElement
+        if (target.classList.contains('fi-tag')) {
+          const clickedTag = target.getAttribute('data-tag')
+          if (clickedTag) {
+            handleCellFilterClick('symbol', clickedTag)
+          }
         }
-      }
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['buySell', {
+      title: getColLabel('buySell'),
+      field: 'buySell',
+      minWidth: 80,
+      sorter: 'string',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const v = String(rowValue || '')
+        return v.toLowerCase().includes(String(headerValue).toLowerCase())
+      },
+      formatter: (cell: any) => {
+        const value = cell.getValue()
+        if (value === 'BUY') {
+          return `<span style="color: #28a745; font-weight: bold;">BUY</span>`
+        }
+        if (value === 'SELL') {
+          return `<span style="color: #dc3545; font-weight: bold;">SELL</span>`
+        }
+        return value
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['openCloseIndicator', {
+      title: getColLabel('openCloseIndicator'),
+      field: 'openCloseIndicator',
+      minWidth: 100,
+      sorter: 'string',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const hv = String(headerValue).toLowerCase()
+        const raw = String(rowValue ?? '').trim()
+        let display = raw
+        if (raw.toUpperCase() === 'O') display = 'OPEN'
+        if (raw.toUpperCase() === 'C') display = 'CLOSE'
+        return display.toLowerCase().includes(hv) || raw.toLowerCase().includes(hv)
+      },
+      formatter: (cell: any) => {
+        const value = cell.getValue()
+        if (value === 'O') {
+          return `<span style="color: #17a2b8; font-weight: bold;">OPEN</span>`
+        }
+        if (value === 'C') {
+          return `<span style="color: #6f42c1; font-weight: bold;">CLOSE</span>`
+        }
+        return value
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['assetCategory', {
+      title: getColLabel('assetCategory'),
+      field: 'assetCategory',
+      minWidth: 120,
+      sorter: 'string',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const assetVal = (typeof rowValue === 'object' && rowValue !== null)
+          ? (rowValue.name || rowValue.id || '')
+          : (rowValue || '')
+        return String(assetVal).toLowerCase().includes(String(headerValue).toLowerCase())
+      },
+      cellClick: (e: any, cell: any) => {
+        const value = cell.getValue()
+        const assetName = typeof value === 'object' && value !== null ? (value.name || value.id) : value
+        if (assetName) handleCellFilterClick('assetCategory', assetName)
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['tradeDate', {
+      title: getColLabel('tradeDate'),
+      field: 'tradeDate',
+      minWidth: 120,
+      sorter: 'date',
+      headerFilter: function(cell: any, onRendered: any, success: any) {
+        const container = document.createElement('div')
+        container.style.position = 'relative'
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.placeholder = 'Select date range'
+        input.style.width = '100%'
+        input.style.boxSizing = 'border-box'
+        input.style.paddingRight = '28px'
+        container.appendChild(input)
 
-      // show on container hover if input has value
-      container.addEventListener('mouseenter', updateClearVisibility)
-      container.addEventListener('mouseleave', updateClearVisibility)
+        const clearBtn = document.createElement('button')
+        clearBtn.type = 'button'
+        clearBtn.innerText = '✕'
+        clearBtn.title = 'Clear'
+        clearBtn.style.position = 'absolute'
+        clearBtn.style.right = '6px'
+        clearBtn.style.top = '50%'
+        clearBtn.style.transform = 'translateY(-50%)'
+        clearBtn.style.border = 'none'
+        clearBtn.style.background = 'transparent'
+        clearBtn.style.cursor = 'pointer'
+        clearBtn.style.fontSize = '12px'
+        clearBtn.style.padding = '2px 6px'
+        clearBtn.style.display = 'none'
+        clearBtn.style.color = '#6c757d'
+        clearBtn.style.borderRadius = '3px'
+        clearBtn.addEventListener('mouseenter', () => clearBtn.style.opacity = '1')
+        clearBtn.addEventListener('mouseleave', () => clearBtn.style.opacity = '0.9')
+        container.appendChild(clearBtn)
 
-      onRendered(() => {
-        try {
-          fp = flatpickr(input, {
-            mode: 'range',
-            dateFormat: 'Y-m-d',
-            allowInput: true,
-            onChange: (selectedDates: Date[]) => {
-              if (!selectedDates || selectedDates.length === 0) {
-                success({ min: '', max: '' })
-                input.value = ''
+        let fp: any = null
+
+        function updateClearVisibility() {
+          const hasValue = !!input.value && input.value.trim() !== ''
+          if (hasValue && container.matches(':hover')) {
+            clearBtn.style.display = 'block'
+          } else {
+            clearBtn.style.display = 'none'
+          }
+        }
+
+        container.addEventListener('mouseenter', updateClearVisibility)
+        container.addEventListener('mouseleave', updateClearVisibility)
+
+        onRendered(() => {
+          try {
+            fp = flatpickr(input, {
+              mode: 'range',
+              dateFormat: 'Y-m-d',
+              allowInput: true,
+              onChange: (selectedDates: Date[]) => {
+                if (!selectedDates || selectedDates.length === 0) {
+                  success({ min: '', max: '' })
+                  input.value = ''
+                  updateClearVisibility()
+                  return
+                }
+                const min = selectedDates[0] ? selectedDates[0].toISOString().slice(0, 10) : ''
+                const max = selectedDates[1] ? selectedDates[1].toISOString().slice(0, 10) : ''
+                input.value = max ? `${min} to ${max}` : min
+                success({ min: min || '', max: max || '' })
                 updateClearVisibility()
-                return
-              }
-              const min = selectedDates[0] ? selectedDates[0].toISOString().slice(0, 10) : ''
-              const max = selectedDates[1] ? selectedDates[1].toISOString().slice(0, 10) : ''
-              input.value = max ? `${min} to ${max}` : min
-              success({ min: min || '', max: max || '' })
-              updateClearVisibility()
-            },
-            onClose: () => {
-              // ensure clear visibility updated after fp closes
-              updateClearVisibility()
-            }
-          })
-        } catch (e) {
-          // fallback: if flatpickr not available, leave simple text input and parse manually
-          input.addEventListener('change', () => {
-            const val = input.value || ''
-            const parts = val.split(' to ').map(s => s.trim())
-            success({ min: parts[0] || '', max: parts[1] || '' })
-            updateClearVisibility()
-          })
-        }
-      })
-
-      // clear action
-      clearBtn.addEventListener('click', (ev) => {
-        ev.preventDefault()
-        ev.stopPropagation()
-        if (fp) {
-          try { fp.clear() } catch (err) {}
-        }
-        input.value = ''
-        success({ min: '', max: '' })
-        updateClearVisibility()
-      })
-
-      // keep clear visibility in sync on manual input
-      input.addEventListener('input', updateClearVisibility)
-
-      return container
-    },
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue || (!headerValue.min && !headerValue.max)) return true
-      const ts = parseTradeDate(rowValue)
-      if (!ts) return false
-      if (headerValue.min) {
-        const minTs = new Date(headerValue.min).getTime()
-        if (isNaN(minTs)) return false
-        if (ts < minTs) return false
-      }
-      if (headerValue.max) {
-        const maxTs = new Date(headerValue.max).getTime()
-        if (isNaN(maxTs)) return false
-        const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
-        if (ts > maxInclusive) return false
-      }
-      return true
-    },
-    // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
-    sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
-      const ta = parseTradeDate(rowA.getData().tradeDate) || 0
-      const tb = parseTradeDate(rowB.getData().tradeDate) || 0
-      return ta - tb
-    },
-    formatter: (cell: any) => {
-      const val = cell.getValue()
-      if (!val) return ''
-      // parse dd/mm/yyyy or d/m/yyyy -> format "Mon DD, YYYY" (e.g. "Jul 21, 2025")
-      const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(val).trim())
-      let dt: Date
-      if (m) {
-        const day = Number(m[1])
-        const month = Number(m[2]) - 1
-        let year = Number(m[3])
-        if (year < 100) year += 2000
-        dt = new Date(year, month, day)
-      } else {
-        dt = new Date(val)
-        if (isNaN(dt.getTime())) return String(val)
-      }
-      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Settlement Date Target',
-    field: 'settleDateTarget',
-    minWidth: 140,
-    sorter: 'date',
-    headerFilter: function(cell: any, onRendered: any, success: any) {
-      const container = document.createElement('div')
-      container.style.position = 'relative'
-      const input = document.createElement('input')
-      input.type = 'text'
-      input.placeholder = 'Select date range'
-      input.style.width = '100%'
-      input.style.boxSizing = 'border-box'
-      input.style.paddingRight = '28px' // space for clear button
-      container.appendChild(input)
-
-      // clear button
-      const clearBtn = document.createElement('button')
-      clearBtn.type = 'button'
-      clearBtn.innerText = '✕'
-      clearBtn.title = 'Clear'
-      clearBtn.style.position = 'absolute'
-      clearBtn.style.right = '6px'
-      clearBtn.style.top = '50%'
-      clearBtn.style.transform = 'translateY(-50%)'
-      clearBtn.style.border = 'none'
-      clearBtn.style.background = 'transparent'
-      clearBtn.style.cursor = 'pointer'
-      clearBtn.style.fontSize = '12px'
-      clearBtn.style.padding = '2px 6px'
-      clearBtn.style.display = 'none'
-      clearBtn.style.color = '#6c757d'
-      clearBtn.style.borderRadius = '3px'
-      clearBtn.addEventListener('mouseenter', () => clearBtn.style.opacity = '1')
-      clearBtn.addEventListener('mouseleave', () => clearBtn.style.opacity = '0.9')
-      container.appendChild(clearBtn)
-
-      let fp: any = null
-
-      function updateClearVisibility() {
-        const hasValue = !!input.value && input.value.trim() !== ''
-        if (hasValue && container.matches(':hover')) {
-          clearBtn.style.display = 'block'
-        } else {
-          clearBtn.style.display = 'none'
-        }
-      }
-
-      container.addEventListener('mouseenter', updateClearVisibility)
-      container.addEventListener('mouseleave', updateClearVisibility)
-
-      onRendered(() => {
-        try {
-          fp = flatpickr(input, {
-            mode: 'range',
-            dateFormat: 'Y-m-d',
-            allowInput: true,
-            onChange: (selectedDates: Date[]) => {
-              if (!selectedDates || selectedDates.length === 0) {
-                success({ min: '', max: '' })
-                input.value = ''
+              },
+              onClose: () => {
                 updateClearVisibility()
-                return
               }
-              const min = selectedDates[0] ? selectedDates[0].toISOString().slice(0, 10) : ''
-              const max = selectedDates[1] ? selectedDates[1].toISOString().slice(0, 10) : ''
-              input.value = max ? `${min} to ${max}` : min
-              success({ min: min || '', max: max || '' })
+            })
+          } catch (e) {
+            input.addEventListener('change', () => {
+              const val = input.value || ''
+              const parts = val.split(' to ').map(s => s.trim())
+              success({ min: parts[0] || '', max: parts[1] || '' })
               updateClearVisibility()
-            },
-            onClose: () => {
+            })
+          }
+        })
+
+        clearBtn.addEventListener('click', (ev) => {
+          ev.preventDefault()
+          ev.stopPropagation()
+          if (fp) {
+            try { fp.clear() } catch (err) {}
+          }
+          input.value = ''
+          success({ min: '', max: '' })
+          updateClearVisibility()
+        })
+
+        input.addEventListener('input', updateClearVisibility)
+
+        return container
+      },
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue || (!headerValue.min && !headerValue.max)) return true
+        const ts = parseTradeDate(rowValue)
+        if (!ts) return false
+        if (headerValue.min) {
+          const minTs = new Date(headerValue.min).getTime()
+          if (isNaN(minTs)) return false
+          if (ts < minTs) return false
+        }
+        if (headerValue.max) {
+          const maxTs = new Date(headerValue.max).getTime()
+          if (isNaN(maxTs)) return false
+          const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
+          if (ts > maxInclusive) return false
+        }
+        return true
+      },
+      sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
+        const ta = parseTradeDate(rowA.getData().tradeDate) || 0
+        const tb = parseTradeDate(rowB.getData().tradeDate) || 0
+        return ta - tb
+      },
+      formatter: (cell: any) => {
+        const val = cell.getValue()
+        if (!val) return ''
+        const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(val).trim())
+        let dt: Date
+        if (m) {
+          const day = Number(m[1])
+          const month = Number(m[2]) - 1
+          let year = Number(m[3])
+          if (year < 100) year += 2000
+          dt = new Date(year, month, day)
+        } else {
+          dt = new Date(val)
+          if (isNaN(dt.getTime())) return String(val)
+        }
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['settleDateTarget', {
+      title: getColLabel('settleDateTarget'),
+      field: 'settleDateTarget',
+      minWidth: 140,
+      sorter: 'date',
+      headerFilter: function(cell: any, onRendered: any, success: any) {
+        const container = document.createElement('div')
+        container.style.position = 'relative'
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.placeholder = 'Select date range'
+        input.style.width = '100%'
+        input.style.boxSizing = 'border-box'
+        input.style.paddingRight = '28px'
+        container.appendChild(input)
+
+        const clearBtn = document.createElement('button')
+        clearBtn.type = 'button'
+        clearBtn.innerText = '✕'
+        clearBtn.title = 'Clear'
+        clearBtn.style.position = 'absolute'
+        clearBtn.style.right = '6px'
+        clearBtn.style.top = '50%'
+        clearBtn.style.transform = 'translateY(-50%)'
+        clearBtn.style.border = 'none'
+        clearBtn.style.background = 'transparent'
+        clearBtn.style.cursor = 'pointer'
+        clearBtn.style.fontSize = '12px'
+        clearBtn.style.padding = '2px 6px'
+        clearBtn.style.display = 'none'
+        clearBtn.style.color = '#6c757d'
+        clearBtn.style.borderRadius = '3px'
+        clearBtn.addEventListener('mouseenter', () => clearBtn.style.opacity = '1')
+        clearBtn.addEventListener('mouseleave', () => clearBtn.style.opacity = '0.9')
+        container.appendChild(clearBtn)
+
+        let fp: any = null
+
+        function updateClearVisibility() {
+          const hasValue = !!input.value && input.value.trim() !== ''
+          if (hasValue && container.matches(':hover')) {
+            clearBtn.style.display = 'block'
+          } else {
+            clearBtn.style.display = 'none'
+          }
+        }
+
+        container.addEventListener('mouseenter', updateClearVisibility)
+        container.addEventListener('mouseleave', updateClearVisibility)
+
+        onRendered(() => {
+          try {
+            fp = flatpickr(input, {
+              mode: 'range',
+              dateFormat: 'Y-m-d',
+              allowInput: true,
+              onChange: (selectedDates: Date[]) => {
+                if (!selectedDates || selectedDates.length === 0) {
+                  success({ min: '', max: '' })
+                  input.value = ''
+                  updateClearVisibility()
+                  return
+                }
+                const min = selectedDates[0] ? selectedDates[0].toISOString().slice(0, 10) : ''
+                const max = selectedDates[1] ? selectedDates[1].toISOString().slice(0, 10) : ''
+                input.value = max ? `${min} to ${max}` : min
+                success({ min: min || '', max: max || '' })
+                updateClearVisibility()
+              },
+              onClose: () => {
+                updateClearVisibility()
+              }
+            })
+          } catch (e) {
+            input.addEventListener('change', () => {
+              const val = input.value || ''
+              const parts = val.split(' to ').map(s => s.trim())
+              success({ min: parts[0] || '', max: parts[1] || '' })
               updateClearVisibility()
-            }
-          })
-        } catch (e) {
-          input.addEventListener('change', () => {
-            const val = input.value || ''
-            const parts = val.split(' to ').map(s => s.trim())
-            success({ min: parts[0] || '', max: parts[1] || '' })
-            updateClearVisibility()
-          })
+            })
+          }
+        })
+
+        clearBtn.addEventListener('click', (ev) => {
+          ev.preventDefault()
+          ev.stopPropagation()
+          if (fp) {
+            try { fp.clear() } catch (err) {}
+          }
+          input.value = ''
+          success({ min: '', max: '' })
+          updateClearVisibility()
+        })
+
+        input.addEventListener('input', updateClearVisibility)
+
+        return container
+      },
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue || (!headerValue.min && !headerValue.max)) return true
+        const ts = parseTradeDate(rowValue)
+        if (!ts) return false
+        if (headerValue.min) {
+          const minTs = new Date(headerValue.min).getTime()
+          if (isNaN(minTs)) return false
+          if (ts < minTs) return false
         }
-      })
-
-      clearBtn.addEventListener('click', (ev) => {
-        ev.preventDefault()
-        ev.stopPropagation()
-        if (fp) {
-          try { fp.clear() } catch (err) {}
+        if (headerValue.max) {
+          const maxTs = new Date(headerValue.max).getTime()
+          if (isNaN(maxTs)) return false
+          const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
+          if (ts > maxInclusive) return false
         }
-        input.value = ''
-        success({ min: '', max: '' })
-        updateClearVisibility()
-      })
+        return true
+      },
+      sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
+        const ta = parseTradeDate(rowA.getData().tradeDate) || 0
+        const tb = parseTradeDate(rowB.getData().tradeDate) || 0
+        return ta - tb
+      },
+      formatter: (cell: any) => {
+        const val = cell.getValue()
+        if (!val) return ''
+        const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(val).trim())
+        let dt: Date
+        if (m) {
+          const day = Number(m[1])
+          const month = Number(m[2]) - 1
+          let year = Number(m[3])
+          if (year < 100) year += 2000
+          dt = new Date(year, month, day)
+        } else {
+          dt = new Date(val)
+          if (isNaN(dt.getTime())) return String(val)
+        }
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['quantity', {
+      title: getColLabel('quantity'),
+      field: 'quantity',
+      minWidth: 140,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'e.g. >100 or 100',
+      headerFilterFunc: (headerValue: any, rowValue: any, rowData: any) => {
+        if (!headerValue) return true
+        const rawQ = parseFloat(rowData?.quantity || 0) || 0
+        const rawM = parseFloat(rowData?.multiplier || 1) || 1
+        const effective = rawQ * rawM
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        switch (op) {
+          case '=': return effective === numVal
+          case '!=': return effective !== numVal
+          case '<': return effective < numVal
+          case '<=': return effective <= numVal
+          case '>': return effective > numVal
+          case '>=': return effective >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => {
+        const row = cell.getRow().getData()
+        const rawQ = row?.quantity ?? ''
+        const rawM = row?.multiplier ?? ''
+        const q = parseFloat(rawQ) || 0
+        const m = parseFloat(rawM) || 1
+        const effective = q * m
+        return formatNumber(effective)
+      },
+      cellClick: (e: any, cell: any) => {
+        const row = cell.getRow().getData()
+        const q = parseFloat(row?.quantity || 0) || 0
+        const m = parseFloat(row?.multiplier || 1) || 1
+        const effective = q * m
+        handleCellFilterClick('quantity', String(effective))
+      },
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['tradePrice', {
+      title: getColLabel('tradePrice'),
+      field: 'tradePrice',
+      minWidth: 120,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'e.g. >10',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['tradeMoney', {
+      title: getColLabel('tradeMoney'),
+      field: 'tradeMoney',
+      minWidth: 120,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'e.g. >1000',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['netCash', {
+      title: getColLabel('netCash'),
+      field: 'netCash',
+      minWidth: 120,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'e.g. >0',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['mtmPnl', {
+      title: getColLabel('mtmPnl'),
+      field: 'mtmPnl',
+      minWidth: 80,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['fifoPnlRealized', {
+      title: getColLabel('fifoPnlRealized'),
+      field: 'fifoPnlRealized',
+      minWidth: 80,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      mutator: (value: any) => {
+        const n = parseFloat(value)
+        return isNaN(n) ? 0 : n
+      },
+      formatter: (cell: any) => {
+        return `<span style="font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
+      },
+      bottomCalc: 'sum',
+      bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue() || 0),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['ibCommission', {
+      title: getColLabel('ibCommission'),
+      field: 'ibCommission',
+      minWidth: 120,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => {
+        return `<span style="color: #dc3545; font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
+      },
+      bottomCalc: 'sum',
+      bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue()),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['closePrice', {
+      title: getColLabel('closePrice'),
+      field: 'closePrice',
+      minWidth: 120,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'Filter',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
+      contextMenu: createFetchedAtContextMenu()
+    }]
+  ])
 
-      input.addEventListener('input', updateClearVisibility)
-
-      return container
-    },
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue || (!headerValue.min && !headerValue.max)) return true
-      const ts = parseTradeDate(rowValue)
-      if (!ts) return false
-      if (headerValue.min) {
-        const minTs = new Date(headerValue.min).getTime()
-        if (isNaN(minTs)) return false
-        if (ts < minTs) return false
-      }
-      if (headerValue.max) {
-        const maxTs = new Date(headerValue.max).getTime()
-        if (isNaN(maxTs)) return false
-        const maxInclusive = maxTs + (24 * 60 * 60 * 1000) - 1
-        if (ts > maxInclusive) return false
-      }
-      return true
-    },
-    // custom sorter that compares parsed timestamps so dd/mm/yyyy sorts correctly
-    sorterFunc: (a: any, b: any, dir: any, rowA: any, rowB: any) => {
-      const ta = parseTradeDate(rowA.getData().tradeDate) || 0
-      const tb = parseTradeDate(rowB.getData().tradeDate) || 0
-      return ta - tb
-    },
-    formatter: (cell: any) => {
-      const val = cell.getValue()
-      if (!val) return ''
-      // parse dd/mm/yyyy or d/m/yyyy -> format "Mon DD, YYYY" (e.g. "Jul 21, 2025")
-      const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(val).trim())
-      let dt: Date
-      if (m) {
-        const day = Number(m[1])
-        const month = Number(m[2]) - 1
-        let year = Number(m[3])
-        if (year < 100) year += 2000
-        dt = new Date(year, month, day)
-      } else {
-        dt = new Date(val)
-        if (isNaN(dt.getTime())) return String(val)
-      }
-      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Quantity',
-    field: 'quantity',
-    minWidth: 140,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'e.g. >100 or 100',
-    headerFilterFunc: (headerValue: any, rowValue: any, rowData: any) => {
-      if (!headerValue) return true
-      const rawQ = parseFloat(rowData?.quantity || 0) || 0
-      const rawM = parseFloat(rowData?.multiplier || 1) || 1
-      const effective = rawQ * rawM
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      switch (op) {
-        case '=': return effective === numVal
-        case '!=': return effective !== numVal
-        case '<': return effective < numVal
-        case '<=': return effective <= numVal
-        case '>': return effective > numVal
-        case '>=': return effective >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => {
-      const row = cell.getRow().getData()
-      const rawQ = row?.quantity ?? ''
-      const rawM = row?.multiplier ?? ''
-      const q = parseFloat(rawQ) || 0
-      const m = parseFloat(rawM) || 1
-      const effective = q * m
-      return formatNumber(effective)
-    },
-    cellClick: (e: any, cell: any) => {
-      const row = cell.getRow().getData()
-      const q = parseFloat(row?.quantity || 0) || 0
-      const m = parseFloat(row?.multiplier || 1) || 1
-      const effective = q * m
-      handleCellFilterClick('quantity', String(effective))
-    },
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Price',
-    field: 'tradePrice',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'e.g. >10',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Total Premium',
-    field: 'tradeMoney',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'e.g. >1000',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
-    contextMenu: createFetchedAtContextMenu()
-  },  
-  {
-    title: 'Net Cash',
-    field: 'netCash',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'e.g. >0',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'MTM PnL',
-    field: 'mtmPnl',
-    minWidth: 80,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'FIFO Realized',
-    field: 'fifoPnlRealized',
-    minWidth: 80,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    // ensure Tabulator sees a numeric value (DB stores text)
-    mutator: (value: any) => {
-      const n = parseFloat(value)
-      return isNaN(n) ? 0 : n
-    },
-    formatter: (cell: any) => {
-      // cell.getValue() will now be a number thanks to mutator
-      return `<span style="font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
-    },
-    bottomCalc: 'sum',
-    bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue() || 0),
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Commission',
-    field: 'ibCommission',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => {
-      return `<span style="color: #dc3545; font-weight: 600;">${formatCurrency(parseFloat(cell.getValue()) || 0)}</span>`
-    },
-    bottomCalc: 'sum',
-    bottomCalcFormatter: (cell: any) => formatCurrency(cell.getValue()),
-    contextMenu: createFetchedAtContextMenu()
-  },
-  {
-    title: 'Close Price',
-    field: 'closePrice',
-    minWidth: 120,
-    hozAlign: 'right',
-    sorter: 'number',
-    headerFilter: 'input',
-    headerFilterPlaceholder: 'Filter',
-    headerFilterFunc: (headerValue: any, rowValue: any) => {
-      if (!headerValue) return true
-      const s = String(headerValue).trim()
-      const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
-      let op = '='
-      let numStr = s
-      if (opMatch) {
-        op = opMatch[1]
-        numStr = s.slice(op.length).trim()
-      }
-      const numVal = parseFloat(numStr)
-      if (isNaN(numVal)) return false
-      const val = parseFloat(rowValue) || 0
-      switch (op) {
-        case '=': return val === numVal
-        case '!=': return val !== numVal
-        case '<': return val < numVal
-        case '<=': return val <= numVal
-        case '>': return val > numVal
-        case '>=': return val >= numVal
-        default: return false
-      }
-    },
-    formatter: (cell: any) => formatCurrency(parseFloat(cell.getValue()) || 0),
-    contextMenu: createFetchedAtContextMenu()
-  }
-].filter(col => tradesVisibleCols.value.includes(col.field as TradesColumnField)))
+  // Return columns in the order specified by tradesVisibleCols
+  return tradesVisibleCols.value
+    .map(field => columnMap.get(field))
+    .filter(Boolean) as any[]
+})
 
 // Initialize Tabulator
 function initializeTabulator() {
@@ -1807,7 +1902,64 @@ onBeforeUnmount(() => {
               <span class="columns-title">Columns</span>
             </div>
             <div class="columns-content">
-              <label v-for="opt in allTradesColumnOptions" :key="opt.field" class="column-option">
+              <!-- Visible columns with reorder controls -->
+              <label
+                v-for="(opt, idx) in tradesVisibleCols.map(f => allTradesColumnOptions.find(c => c.field === f)).filter(Boolean)"
+                :key="opt.field"
+                class="column-option"
+                draggable="true"
+                @dragstart="handleDragStart(idx)"
+                @dragover="handleDragOver"
+                @drop="handleDrop(idx)"
+                style="align-items: center;"
+              >
+                <input 
+                  type="checkbox" 
+                  :value="opt.field" 
+                  v-model="tradesVisibleCols"
+                  class="column-checkbox"
+                />
+                <span class="column-label">
+                  {{ columnRenames[opt.field] || opt.label }}
+                  <span v-if="columnRenames[opt.field]" style="font-size: 11px; color: #888; font-style: italic; display: inline-block;">
+                    ({{ opt.label }})
+                  </span>
+                </span>
+                <button
+                  class="col-rename-btn"
+                  type="button"
+                  @click.stop="openColRenameDialog(opt.field, columnRenames[opt.field] || opt.label)"
+                  title="Rename column"
+                  style="margin-left: 6px; font-size: 13px; background: none; border: none; color: #888; cursor: pointer;"
+                >✎</button>
+                <span class="move-icons" style="display: flex; flex-direction: column; margin-left: 8px;">
+                  <button
+                    type="button"
+                    @click.stop="moveColumnUp(idx)"
+                    :disabled="idx === 0"
+                    title="Move up"
+                    style="background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 2px;"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    @click.stop="moveColumnDown(idx)"
+                    :disabled="idx === tradesVisibleCols.length - 1"
+                    title="Move down"
+                    style="background: none; border: none; cursor: pointer; padding: 0;"
+                  >
+                    ▼
+                  </button>
+                </span>
+              </label>
+              
+              <!-- Unchecked columns -->
+              <label
+                v-for="opt in allTradesColumnOptions.filter(c => !tradesVisibleCols.includes(c.field))"
+                :key="opt.field"
+                class="column-option"
+              >
                 <input 
                   type="checkbox" 
                   :value="opt.field" 
@@ -1881,6 +2033,17 @@ onBeforeUnmount(() => {
         <div class="dialog-actions">
           <button @click="saveAppName">Save</button>
           <button @click="showAppNameDialog = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showColRenameDialog" class="rename-dialog-backdrop">
+      <div class="rename-dialog">
+        <h3>Rename Column</h3>
+        <input v-model="colRenameValue" placeholder="Column name" />
+        <div class="dialog-actions">
+          <button @click="saveColRename">Save</button>
+          <button @click="cancelColRename">Cancel</button>
         </div>
       </div>
     </div>
@@ -2511,5 +2674,132 @@ onBeforeUnmount(() => {
   z-index: 100000 !important;
   min-width: 320px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+.columns-content {
+  padding: 4px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.column-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin: 0;
+  font-size: 13px;
+}
+
+.column-option:hover {
+  background-color: #f8f9fa;
+}
+
+.col-rename-btn {
+  flex-shrink: 0;
+}
+
+.move-icons {
+  flex-shrink: 0;
+}
+
+.move-icons button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.rename-dialog-backdrop {
+  position: fixed !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.18);
+  z-index: 99999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rename-dialog {
+  background: #fff;
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  border-radius: 1.25rem;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: popup-fade-in 0.2s;
+}
+
+@keyframes popup-fade-in {
+  from { opacity: 0; transform: scale(0.98);}
+  to   { opacity: 1; transform: scale(1);}
+}
+
+.rename-dialog h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #22223b;
+  letter-spacing: -0.5px;
+}
+
+.rename-dialog input {
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 0.6rem 0.9rem;
+  border: 1.5px solid #dbe2ef;
+  border-radius: 7px;
+  margin-bottom: 0.5rem;
+  outline: none;
+  transition: border 0.2s;
+  background: #f8fafc;
+  color: #22223b;
+  box-sizing: border-box;
+}
+
+.rename-dialog input:focus {
+  border-color: #007bff;
+  background: #fff;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.7rem;
+  width: 100%;
+  justify-content: left;
+}
+
+.dialog-actions button {
+  min-width: 90px;
+  padding: 0.55rem 1.2rem;
+  border-radius: 7px;
+  border: 1.5px solid #007bff;
+  background: #007bff;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border 0.18s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.dialog-actions button:last-child {
+  background: #fff;
+  color: #007bff;
+  border: 1.5px solid #007bff;
+}
+
+.dialog-actions button:hover {
+  background: #0056b3;
+  color: #fff;
+  border-color: #0056b3;
+}
+
+.dialog-actions button:last-child:hover {
+  background: #f1f3f5;
+  color: #0056b3;
+  border-color: #0056b3;
 }
 </style>
