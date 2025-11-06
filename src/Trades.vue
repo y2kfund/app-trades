@@ -8,7 +8,6 @@ import { useTradesQuery, type Trade } from '@y2kfund/core/trades'
 import type { TradesProps } from './index'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.min.css'
-import { a } from 'node_modules/@tanstack/vue-query/build/modern/queryClient-BCt_J-HC';
 
 const props = withDefaults(defineProps<TradesProps>(), {
   accountId: '1',
@@ -27,7 +26,7 @@ const emit = defineEmits<{
 const eventBus = inject<any>('eventBus')
 
 // Active filters
-type ActiveFilter = { field: 'symbol' | 'legal_entity' | 'assetCategory' | 'quantity'; value: string }
+type ActiveFilter = { field: 'symbol' | 'legal_entity' | 'assetCategory' | 'quantity' | 'contract_quantity' | 'accounting_quantity'; value: string }
 const activeFilters = ref<ActiveFilter[]>([])
 
 // Symbol filters
@@ -308,6 +307,7 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
 const accountFilter = ref<string | null>(null)
 const assetFilter = ref<string | null>(null)
 const quantityFilter = ref<number | null>(null)
+const contractQuantityFilter = ref<number | null>(null)
 const accountingQuantityFilter = ref<number | null>(null)
 
 function writeTradesSortToUrl(sortField: string, sortDir: string) {
@@ -316,12 +316,13 @@ function writeTradesSortToUrl(sortField: string, sortDir: string) {
   window.history.replaceState({}, '', url.toString())
 }
 
-function parseTradesSortFromUrl(): { field: string, dir: string } | null {
+function parseTradesSortFromUrl(): { field: string, dir: 'asc' | 'desc' } | null {
   const url = new URL(window.location.href)
   const sortParam = url.searchParams.get(`${props.window}_trades_sort`)
   if (!sortParam) return null
   const [field, dir] = sortParam.split(':')
   if (!field || !dir) return null
+  if (dir !== 'asc' && dir !== 'desc') return null
   return { field, dir }
 }
 
@@ -413,7 +414,7 @@ function syncActiveFiltersFromTable() {
   }
 }
 
-function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quantity') {
+function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quantity' | 'contract_quantity' | 'accounting_quantity') {
   if (field === 'legal_entity') {
     accountFilter.value = null
     const url = new URL(window.location.href)
@@ -443,12 +444,10 @@ function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quant
     url.searchParams.delete(`${props.window}_all_cts_qty`)
     window.history.replaceState({}, '', url.toString())
     if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
+  } else if (field === 'contract_quantity') {
+    contractQuantityFilter.value = null
   } else if (field === 'accounting_quantity') {
     accountingQuantityFilter.value = null
-    const url = new URL(window.location.href)
-    url.searchParams.delete(`${props.window}_all_cts_accounting_qty`)
-    window.history.replaceState({}, '', url.toString())
-    if (eventBus) eventBus.emit('accounting-quantity-filter-changed', { quantity: null, source: 'trades' })
   }
   updateFilters()
 }
@@ -475,7 +474,7 @@ function clearAllFilters() {
 }
 
 // URL synchronization for filters
-function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[]; asset?: string; quantity?: number } {
+function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[]; asset?: string; quantity?: number; contract_quantity?: number; accounting_quantity?: number } {
   const url = new URL(window.location.href)
   const account = url.searchParams.get(`${props.window}_all_cts_clientId`) || undefined
   const symbolParam = url.searchParams.get(`${props.window}_all_cts_fi`) || undefined
