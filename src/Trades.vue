@@ -8,6 +8,7 @@ import { useTradesQuery, type Trade } from '@y2kfund/core/trades'
 import type { TradesProps } from './index'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.min.css'
+import { a } from 'node_modules/@tanstack/vue-query/build/modern/queryClient-BCt_J-HC';
 
 const props = withDefaults(defineProps<TradesProps>(), {
   accountId: '1',
@@ -196,7 +197,7 @@ function formatNumber(value: number): string {
 }
 
 // Filter handlers
-function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quantity', value: string) {
+function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quantity' | 'contract_quantity' | 'accounting_quantity', value: string) {
   if (field === 'legal_entity') {
     // Toggle account filter
     if (accountFilter.value === value) {
@@ -284,12 +285,30 @@ function handleCellFilterClick(field: 'legal_entity' | 'symbol' | 'assetCategory
       if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: num, source: 'trades' })
     }
     updateFilters()
+  } else if (field === 'accounting_quantity') {
+    // Handle accounting_quantity filter click
+    const num = Number(value)
+    if (accountingQuantityFilter.value !== null && Math.abs((accountingQuantityFilter.value || 0) - num) < 1e-9) {
+      accountingQuantityFilter.value = null
+      const url = new URL(window.location.href)
+      url.searchParams.delete(`${props.window}_all_cts_accounting_qty`)
+      window.history.replaceState({}, '', url.toString())
+      if (eventBus) eventBus.emit('accounting-quantity-filter-changed', { quantity: null, source: 'trades' })
+    } else {
+      accountingQuantityFilter.value = num
+      const url = new URL(window.location.href)
+      url.searchParams.set(`${props.window}_all_cts_accounting_qty`, String(num))
+      window.history.replaceState({}, '', url.toString())
+      if (eventBus) eventBus.emit('accounting-quantity-filter-changed', { quantity: num, source: 'trades' })
+    }
+    updateFilters()
   }
 }
 
 const accountFilter = ref<string | null>(null)
 const assetFilter = ref<string | null>(null)
 const quantityFilter = ref<number | null>(null)
+const accountingQuantityFilter = ref<number | null>(null)
 
 function writeTradesSortToUrl(sortField: string, sortDir: string) {
   const url = new URL(window.location.href)
@@ -347,6 +366,12 @@ function updateFilters() {
         if (!hasAllTags) return false
       }
 
+      // Accounting quantity filter
+      if (accountingQuantityFilter.value !== null) {
+        const a = parseFloat(data?.accounting_quantity || 0) || 0
+        if (Math.abs(a - (accountingQuantityFilter.value || 0)) > 1e-6) return false
+      }
+
       return true
     })
 
@@ -369,6 +394,9 @@ function syncActiveFiltersFromTable() {
   }
   if (quantityFilter.value !== null) {
     next.push({ field: 'quantity', value: String(quantityFilter.value) })
+  }
+  if (accountingQuantityFilter.value !== null) {
+    next.push({ field: 'accounting_quantity', value: String(accountingQuantityFilter.value) })
   }
   if (symbolTagFilters.value.length > 0) {
     symbolTagFilters.value.forEach(tag => {
@@ -415,6 +443,12 @@ function clearFilter(field: 'legal_entity' | 'symbol' | 'assetCategory' | 'quant
     url.searchParams.delete(`${props.window}_all_cts_qty`)
     window.history.replaceState({}, '', url.toString())
     if (eventBus) eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
+  } else if (field === 'accounting_quantity') {
+    accountingQuantityFilter.value = null
+    const url = new URL(window.location.href)
+    url.searchParams.delete(`${props.window}_all_cts_accounting_qty`)
+    window.history.replaceState({}, '', url.toString())
+    if (eventBus) eventBus.emit('accounting-quantity-filter-changed', { quantity: null, source: 'trades' })
   }
   updateFilters()
 }
@@ -424,6 +458,7 @@ function clearAllFilters() {
   symbolTagFilters.value = []
   assetFilter.value = null
   quantityFilter.value = null
+  accountingQuantityFilter.value = null
   const url = new URL(window.location.href)
   url.searchParams.delete(`${props.window}_all_cts_clientId`)
   url.searchParams.delete(`${props.window}_all_cts_fi`)
@@ -434,6 +469,7 @@ function clearAllFilters() {
     eventBus.emit('account-filter-changed', { accountId: null, source: 'trades' })
     eventBus.emit('asset-filter-changed', { asset: null, source: 'trades' })
     eventBus.emit('quantity-filter-changed', { quantity: null, source: 'trades' })
+    eventBus.emit('accounting-quantity-filter-changed', { quantity: null, source: 'trades' })
   }
   updateFilters()
 }
@@ -492,9 +528,10 @@ function handleExternalAssetFilter(payload: { asset: string | null, source: stri
   updateFilters()
 }
 
-function handleExternalQuantityFilter(payload: { quantity: number | null, source: string }) {
+function handleExternalQuantityFilter(payload: { quantity: number | null, source: string, accountingQuantity?: number | null }) {
   if (payload.source === 'trades') return
   quantityFilter.value = payload.quantity
+  accountingQuantityFilter.value = payload.accountingQuantity ?? null
   const url = new URL(window.location.href)
   if (payload.quantity !== null && payload.quantity !== undefined) url.searchParams.set(`${props.window}_all_cts_qty`, String(payload.quantity))
   else url.searchParams.delete(`${props.window}_all_cts_qty`)
@@ -541,6 +578,7 @@ onMounted(async () => {
   if (filters.symbol) symbolTagFilters.value = filters.symbol
   if (filters.asset) assetFilter.value = filters.asset
   if (filters.quantity !== undefined) quantityFilter.value = filters.quantity
+  if (filters.accounting_quantity !== undefined) accountingQuantityFilter.value = filters.accounting_quantity
 
   // Try to initialize if data is already loaded
   if (q.isSuccess.value && tableDiv.value && !isTableInitialized.value) {
@@ -586,6 +624,7 @@ window.addEventListener('popstate', () => {
   symbolTagFilters.value = filters.symbol || []
   assetFilter.value = filters.asset || null
   quantityFilter.value = filters.quantity ?? null
+  accountingQuantityFilter.value = filters.accounting_quantity ?? null
 
   // Restore sort from URL
   const sortFromUrl = parseTradesSortFromUrl()
@@ -616,7 +655,7 @@ type TradesColumnField =
   | 'legal_entity' | 'symbol' | 'buySell' | 'openCloseIndicator' | 'assetCategory'
   | 'tradeDate' | 'settleDateTarget' | 'quantity' | 'tradePrice'
   | 'tradeMoney' | 'netCash' | 'mtmPnl' | 'fifoPnlRealized'
-  | 'ibCommission' | 'closePrice'
+  | 'ibCommission' | 'closePrice' | 'accounting_quantity' | 'contract_quantity'
 
 const allTradesColumnOptions: Array<{ field: TradesColumnField; label: string }> = [
   { field: 'legal_entity', label: 'Account' },
@@ -626,7 +665,9 @@ const allTradesColumnOptions: Array<{ field: TradesColumnField; label: string }>
   { field: 'assetCategory', label: 'Asset Class' },
   { field: 'tradeDate', label: 'Trade Date' },
   { field: 'settleDateTarget', label: 'Settlement Date Target' },
-  { field: 'quantity', label: 'Quantity' },
+  /* { field: 'quantity', label: 'Quantity' }, */
+  { field: 'contract_quantity', label: 'Contract Quantity' },
+  { field: 'accounting_quantity', label: 'Accounting Quantity' },
   { field: 'tradePrice', label: 'Price' },
   { field: 'tradeMoney', label: 'Total Premium' },
   { field: 'netCash', label: 'Net Cash' },
@@ -1214,9 +1255,9 @@ const columns = computed(() => {
         return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       },
       contextMenu: createFetchedAtContextMenu()
-    }],
+    }],/* 
     ['quantity', {
-      title: getColLabel('quantity'),
+      title: getColLabel('contract_quantity'),
       field: 'quantity',
       minWidth: 140,
       hozAlign: 'right',
@@ -1226,7 +1267,7 @@ const columns = computed(() => {
       headerFilterFunc: (headerValue: any, rowValue: any, rowData: any) => {
         if (!headerValue) return true
         const rawQ = parseFloat(rowData?.quantity || 0) || 0
-        const rawM = parseFloat(rowData?.multiplier || 1) || 1
+        const rawM = parseFloat(1) || 1
         const effective = rawQ * rawM
         const s = String(headerValue).trim()
         const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
@@ -1251,7 +1292,7 @@ const columns = computed(() => {
       formatter: (cell: any) => {
         const row = cell.getRow().getData()
         const rawQ = row?.quantity ?? ''
-        const rawM = row?.multiplier ?? ''
+        const rawM = ''
         const q = parseFloat(rawQ) || 0
         const m = parseFloat(rawM) || 1
         const effective = q * m
@@ -1264,6 +1305,98 @@ const columns = computed(() => {
         const effective = q * m
         handleCellFilterClick('quantity', String(effective))
       },
+      contextMenu: createFetchedAtContextMenu()
+    }], */
+    ['contract_quantity', {
+      title: getColLabel('contract_quantity'),
+      field: 'contract_quantity',
+      minWidth: 140,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'e.g. >100',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => {
+        const value = cell.getValue()
+        if (value === null || value === undefined) return '-'
+        return formatNumber(value)
+      },
+      cellClick: (e: any, cell: any) => {
+        const value = cell.getValue()
+        if (value !== null && value !== undefined) {
+          handleCellFilterClick('contract_quantity', String(value))
+        }
+      },
+      bottomCalc: 'sum',
+      bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue()),
+      contextMenu: createFetchedAtContextMenu()
+    }],
+    ['accounting_quantity', {
+      title: getColLabel('accounting_quantity'),
+      field: 'accounting_quantity',
+      minWidth: 160,
+      hozAlign: 'right',
+      sorter: 'number',
+      headerFilter: 'input',
+      headerFilterPlaceholder: 'e.g. >100',
+      headerFilterFunc: (headerValue: any, rowValue: any) => {
+        if (!headerValue) return true
+        const s = String(headerValue).trim()
+        const opMatch = s.match(/^(<=|>=|=|!=|<|>)/)
+        let op = '='
+        let numStr = s
+        if (opMatch) {
+          op = opMatch[1]
+          numStr = s.slice(op.length).trim()
+        }
+        const numVal = parseFloat(numStr)
+        if (isNaN(numVal)) return false
+        const val = parseFloat(rowValue) || 0
+        switch (op) {
+          case '=': return val === numVal
+          case '!=': return val !== numVal
+          case '<': return val < numVal
+          case '<=': return val <= numVal
+          case '>': return val > numVal
+          case '>=': return val >= numVal
+          default: return false
+        }
+      },
+      formatter: (cell: any) => {
+        const value = cell.getValue()
+        if (value === null || value === undefined) return '-'
+        return formatNumber(value)
+      },
+      cellClick: (e: any, cell: any) => {
+        const value = cell.getValue()
+        if (value !== null && value !== undefined) {
+          handleCellFilterClick('accounting_quantity', String(value))
+        }
+      },
+      bottomCalc: 'sum',
+      bottomCalcFormatter: (cell: any) => formatNumber(cell.getValue()),
       contextMenu: createFetchedAtContextMenu()
     }],
     ['tradePrice', {
