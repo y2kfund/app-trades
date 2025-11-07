@@ -17295,7 +17295,7 @@ function wf(r, e) {
     queryFn: async () => {
       var o, l;
       const h = await vf(t, e);
-      console.log("🔍 Querying trades with config:", {
+      console.log("Querying trades with config:", {
         accountId: r,
         schema: "hf",
         table: "trades",
@@ -18875,7 +18875,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
             u ? navigator.clipboard.writeText(u).then(() => {
               R("success", "Copied!", "Timestamp copied to clipboard");
             }).catch((c) => {
-              console.error("Failed to copy:", c), R("error", "Copy Failed", "Could not copy timestamp");
+              console.error("Failed to copy: ", c), R("error", "Copy Failed", "Could not copy timestamp");
             }) : R("warning", "No Data", "No timestamp available to copy");
           }
         }
@@ -19005,7 +19005,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
             h && h.redraw();
           });
         } catch (w) {
-          console.warn("Error in updateFilters:", w);
+          console.warn("Error in updateFilters: ", w);
         }
     }
     function Wt() {
@@ -19048,13 +19048,13 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
       return { legal_entity: g, symbol: u, asset: c, quantity: v };
     }
     function Ti(w) {
-      if (console.log("📍 [Trades] Received account filter:", w), w.source === "trades") return;
+      if (console.log("[Trades] Received account filter:", w), w.source === "trades") return;
       U.value = w.accountId;
       const g = new URL(window.location.href);
       w.accountId ? g.searchParams.set(`${t.window}_all_cts_clientId`, w.accountId) : g.searchParams.delete(`${t.window}_all_cts_clientId`), window.history.replaceState({}, "", g.toString()), X();
     }
     function Ri(w) {
-      if (console.log("📍 [Trades] Received symbol filter:", w), w.source === "trades") return;
+      if (console.log("[Trades] Received symbol filter:", w), w.source === "trades") return;
       a.value = w.symbolTags;
       const g = new URL(window.location.href);
       w.symbolTags.length > 0 ? g.searchParams.set(`${t.window}_all_cts_fi`, w.symbolTags.join(",")) : g.searchParams.delete(`${t.window}_all_cts_fi`), window.history.replaceState({}, "", g.toString()), X();
@@ -19929,7 +19929,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
           });
         });
       } catch (u) {
-        console.error("Error creating Tabulator:", u);
+        console.error("Error creating Tabulator :", u);
       }
     }
     nt([() => o.isSuccess.value, l], async ([w, g]) => {
@@ -19942,7 +19942,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
             X(), h && (Ve.value = h.getDataCount("active") || 0);
           });
         } catch (g) {
-          console.warn("Error updating table data:", g);
+          console.warn("Error updating table data: ", g);
         }
     }, { deep: !0 });
     function qs() {
@@ -19971,7 +19971,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
         try {
           h.destroy();
         } catch (g) {
-          console.warn("Error destroying tabulator:", g);
+          console.warn("Error destroying tabulator :", g);
         }
       (w = o._cleanup) == null || w.call(o);
     }), (w, g) => {
@@ -20200,7 +20200,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
   for (const [i, s] of e)
     t[i] = s;
   return t;
-}, lm = /* @__PURE__ */ nm(sm, [["__scopeId", "data-v-16c6d26a"]]);
+}, lm = /* @__PURE__ */ nm(sm, [["__scopeId", "data-v-58fa9f36"]]);
 export {
   lm as Trades,
   lm as default

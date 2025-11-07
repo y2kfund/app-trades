@@ -139,7 +139,7 @@ function createFetchedAtContextMenu() {
               showToast('success', 'Copied!', 'Timestamp copied to clipboard')
             })
             .catch((err) => {
-              console.error('Failed to copy:', err)
+              console.error('Failed to copy: ', err)
               showToast('error', 'Copy Failed', 'Could not copy timestamp')
             })
         } else {
@@ -381,7 +381,7 @@ function updateFilters() {
       if (tabulator) tabulator.redraw()
     })
   } catch (error) {
-    console.warn('Error in updateFilters:', error)
+    console.warn('Error in updateFilters: ', error)
   }
 }
 
@@ -486,7 +486,7 @@ function parseFiltersFromUrl(): { legal_entity?: string; symbol?: string[]; asse
 }
 
 function handleExternalAccountFilter(payload: { accountId: string | null, source: string }) {
-  console.log('📍 [Trades] Received account filter:', payload)
+  console.log('[Trades] Received account filter:', payload)
   if (payload.source === 'trades') return
 
   // Apply or clear the filter
@@ -502,7 +502,7 @@ function handleExternalAccountFilter(payload: { accountId: string | null, source
 }
 
 function handleExternalSymbolFilter(payload: { symbolTags: string[], source: string }) {
-  console.log('📍 [Trades] Received symbol filter:', payload)
+  console.log('[Trades] Received symbol filter:', payload)
   if (payload.source === 'trades') return
 
   // Apply the symbol filter
@@ -1725,7 +1725,7 @@ function initializeTabulator() {
       })
     })
   } catch (error) {
-    console.error('Error creating Tabulator:', error)
+    console.error('Error creating Tabulator :', error)
   }
 }
 
@@ -1754,7 +1754,7 @@ watch(() => q.data.value, async (newData) => {
       }
     })
   } catch (error) {
-    console.warn('Error updating table data:', error)
+    console.warn('Error updating table data: ', error)
   }
 }, { deep: true })
 
@@ -1810,7 +1810,7 @@ onBeforeUnmount(() => {
     try {
       tabulator.destroy()
     } catch (error) {
-      console.warn('Error destroying tabulator:', error)
+      console.warn('Error destroying tabulator :', error)
     }
   }
   q._cleanup?.()
