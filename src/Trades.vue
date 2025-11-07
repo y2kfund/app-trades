@@ -4,7 +4,7 @@ import { onBeforeUnmount, onMounted, computed, ref, watch, nextTick, inject } fr
 import { DateTime } from 'luxon'                // <- added
 ;(window as any).luxon = { DateTime }          // <- expose for Tabulator
 import { TabulatorFull as Tabulator } from 'tabulator-tables'
-import { useTradesQuery, type Trade } from '@y2kfund/core/trades'
+import { useTradeQuery, type Trade } from '@y2kfund/core/trades'
 import type { TradesProps } from './index'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.min.css'
@@ -33,7 +33,7 @@ const activeFilters = ref<ActiveFilter[]>([])
 const symbolTagFilters = ref<string[]>([])
 
 // Query trades data with realtime updates
-const q = useTradesQuery(props.accountId, props.userId)
+const q = useTradeQuery(props.accountId, props.userId)
 
 // Tabulator instance
 const tableDiv = ref<HTMLDivElement | null>(null)

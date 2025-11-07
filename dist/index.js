@@ -20200,7 +20200,7 @@ const xf = { class: "trades-card" }, Mf = { class: "toast-container" }, Df = { k
   for (const [i, s] of e)
     t[i] = s;
   return t;
-}, lm = /* @__PURE__ */ nm(sm, [["__scopeId", "data-v-58fa9f36"]]);
+}, lm = /* @__PURE__ */ nm(sm, [["__scopeId", "data-v-a1af72f2"]]);
 export {
   lm as Trades,
   lm as default
