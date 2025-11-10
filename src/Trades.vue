@@ -290,10 +290,6 @@ const { tabulator, isTabulatorReady, isTableInitialized } = useTabulatorSetup(
   (event: string, data?: any) => {
     if (event === 'row-click') {
       emit('row-click', data)
-    } else if (event === 'minimize') {
-      emit('minimize')
-    } else if (event === 'maximize') {
-      emit('maximize')
     }
   },
   props.onRowClick

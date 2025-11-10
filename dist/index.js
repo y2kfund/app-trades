@@ -4,7 +4,7 @@ var Tr = (r) => {
 };
 var bl = (r, e, t) => e in r ? gl(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
 var k = (r, e, t) => bl(r, typeof e != "symbol" ? e + "" : e, t), Ys = (r, e, t) => e.has(r) || Tr("Cannot " + t);
-var R = (r, e, t) => (Ys(r, e, "read from private field"), t ? t.call(r) : e.get(r)), oe = (r, e, t) => e.has(r) ? Tr("Cannot add the same private member more than once") : e instanceof WeakSet ? e.add(r) : e.set(r, t), Y = (r, e, t, i) => (Ys(r, e, "write to private field"), i ? i.call(r, t) : e.set(r, t), t), ce = (r, e, t) => (Ys(r, e, "access private method"), t);
+var R = (r, e, t) => (Ys(r, e, "read from private field"), t ? t.call(r) : e.get(r)), oe = (r, e, t) => e.has(r) ? Tr("Cannot add the same private member more than once") : e instanceof WeakSet ? e.add(r) : e.set(r, t), q = (r, e, t, i) => (Ys(r, e, "write to private field"), i ? i.call(r, t) : e.set(r, t), t), ce = (r, e, t) => (Ys(r, e, "access private method"), t);
 import { isRef as Eo, unref as Pe, hasInjectionContext as vl, inject as ur, getCurrentScope as wl, computed as hi, shallowReactive as yl, reactive as Cl, watch as Ae, onScopeDispose as El, shallowReadonly as Tl, readonly as Rl, toRefs as kl, ref as ie, nextTick as us, onBeforeUnmount as fn, defineComponent as di, createElementBlock as de, openBlock as le, Fragment as gs, renderList as bs, normalizeClass as Ml, createElementVNode as G, createCommentVNode as vt, toDisplayString as Ve, resolveComponent as xl, createBlock as To, withCtx as Ro, createTextVNode as Rs, renderSlot as Dl, withModifiers as ki, withDirectives as Sl, withKeys as Ll, vModelText as Fl, onMounted as Rr, createVNode as Ei } from "vue";
 class At extends Error {
 }
@@ -5528,16 +5528,16 @@ var wr = class {
     process.env.NODE_ENV !== "production" && R(this, Ft) && r !== R(this, Ze) && console.error(
       "[timeoutManager]: Switching provider after calls to previous provider might result in unexpected behavior.",
       { previous: R(this, Ze), provider: r }
-    ), Y(this, Ze, r), process.env.NODE_ENV !== "production" && Y(this, Ft, !1);
+    ), q(this, Ze, r), process.env.NODE_ENV !== "production" && q(this, Ft, !1);
   }
   setTimeout(r, e) {
-    return process.env.NODE_ENV !== "production" && Y(this, Ft, !0), R(this, Ze).setTimeout(r, e);
+    return process.env.NODE_ENV !== "production" && q(this, Ft, !0), R(this, Ze).setTimeout(r, e);
   }
   clearTimeout(r) {
     R(this, Ze).clearTimeout(r);
   }
   setInterval(r, e) {
-    return process.env.NODE_ENV !== "production" && Y(this, Ft, !0), R(this, Ze).setInterval(r, e);
+    return process.env.NODE_ENV !== "production" && q(this, Ft, !0), R(this, Ze).setInterval(r, e);
   }
   clearInterval(r) {
     R(this, Ze).clearInterval(r);
@@ -5632,7 +5632,7 @@ var Ot, ft, ii, wo, _u = (wo = class extends wr {
     oe(this, Ot);
     oe(this, ft);
     oe(this, ii);
-    Y(this, ii, (e) => {
+    q(this, ii, (e) => {
       if (!Es && window.addEventListener) {
         const t = () => e();
         return window.addEventListener("visibilitychange", t, !1), () => {
@@ -5646,16 +5646,16 @@ var Ot, ft, ii, wo, _u = (wo = class extends wr {
   }
   onUnsubscribe() {
     var e;
-    this.hasListeners() || ((e = R(this, ft)) == null || e.call(this), Y(this, ft, void 0));
+    this.hasListeners() || ((e = R(this, ft)) == null || e.call(this), q(this, ft, void 0));
   }
   setEventListener(e) {
     var t;
-    Y(this, ii, e), (t = R(this, ft)) == null || t.call(this), Y(this, ft, e((i) => {
+    q(this, ii, e), (t = R(this, ft)) == null || t.call(this), q(this, ft, e((i) => {
       typeof i == "boolean" ? this.setFocused(i) : this.onFocus();
     }));
   }
   setFocused(e) {
-    R(this, Ot) !== e && (Y(this, Ot, e), this.onFocus());
+    R(this, Ot) !== e && (q(this, Ot, e), this.onFocus());
   }
   onFocus() {
     const e = this.isFocused();
@@ -5756,7 +5756,7 @@ var Vu = Nu(), si, mt, ni, yo, Wu = (yo = class extends wr {
     oe(this, si, !0);
     oe(this, mt);
     oe(this, ni);
-    Y(this, ni, (e) => {
+    q(this, ni, (e) => {
       if (!Es && window.addEventListener) {
         const t = () => e(!0), i = () => e(!1);
         return window.addEventListener("online", t, !1), window.addEventListener("offline", i, !1), () => {
@@ -5770,14 +5770,14 @@ var Vu = Nu(), si, mt, ni, yo, Wu = (yo = class extends wr {
   }
   onUnsubscribe() {
     var e;
-    this.hasListeners() || ((e = R(this, mt)) == null || e.call(this), Y(this, mt, void 0));
+    this.hasListeners() || ((e = R(this, mt)) == null || e.call(this), q(this, mt, void 0));
   }
   setEventListener(e) {
     var t;
-    Y(this, ni, e), (t = R(this, mt)) == null || t.call(this), Y(this, mt, e(this.setOnline.bind(this)));
+    q(this, ni, e), (t = R(this, mt)) == null || t.call(this), q(this, mt, e(this.setOnline.bind(this)));
   }
   setOnline(e) {
-    R(this, si) !== e && (Y(this, si, e), this.listeners.forEach((i) => {
+    R(this, si) !== e && (q(this, si, e), this.listeners.forEach((i) => {
       i(e);
     }));
   }
@@ -5820,7 +5820,7 @@ var Me, J, Vi, Te, zt, ri, tt, pt, Wi, oi, ai, Ht, Pt, gt, li, te, Si, xn, Dn, S
     oe(this, Pt);
     oe(this, gt);
     oe(this, li, /* @__PURE__ */ new Set());
-    this.options = t, Y(this, Me, e), Y(this, pt, null), Y(this, tt, ao()), this.bindMethods(), this.setOptions(t);
+    this.options = t, q(this, Me, e), q(this, pt, null), q(this, tt, ao()), this.bindMethods(), this.setOptions(t);
   }
   bindMethods() {
     this.refetch = this.refetch.bind(this);
@@ -5871,7 +5871,7 @@ var Me, J, Vi, Te, zt, ri, tt, pt, Wi, oi, ai, Ht, Pt, gt, li, te, Si, xn, Dn, S
   }
   getOptimisticResult(e) {
     const t = R(this, Me).getQueryCache().build(R(this, Me), e), i = this.createResult(t, e);
-    return qu(this, i) && (Y(this, Te, i), Y(this, ri, this.options), Y(this, zt, R(this, J).state)), i;
+    return qu(this, i) && (q(this, Te, i), q(this, ri, this.options), q(this, zt, R(this, J).state)), i;
   }
   getCurrentResult() {
     return R(this, Te);
@@ -5936,9 +5936,9 @@ var Me, J, Vi, Te, zt, ri, tt, pt, Wi, oi, ai, Ht, Pt, gt, li, te, Si, xn, Dn, S
         f = R(this, oi);
       else
         try {
-          Y(this, Wi, t.select), f = t.select(f), f = ro(n == null ? void 0 : n.data, f, t), Y(this, oi, f), Y(this, pt, null);
+          q(this, Wi, t.select), f = t.select(f), f = ro(n == null ? void 0 : n.data, f, t), q(this, oi, f), q(this, pt, null);
         } catch (z) {
-          Y(this, pt, z);
+          q(this, pt, z);
         }
     R(this, pt) && (b = R(this, pt), f = R(this, oi), g = Date.now(), v = "error");
     const E = d.fetchStatus === "fetching", M = v === "pending", F = v === "error", A = M && E, j = f !== void 0, T = {
@@ -5973,7 +5973,7 @@ var Me, J, Vi, Te, zt, ri, tt, pt, Wi, oi, ai, Ht, Pt, gt, li, te, Si, xn, Dn, S
       const z = (pe) => {
         T.status === "error" ? pe.reject(T.error) : T.data !== void 0 && pe.resolve(T.data);
       }, P = () => {
-        const pe = Y(this, tt, T.promise = ao());
+        const pe = q(this, tt, T.promise = ao());
         z(pe);
       }, _ = R(this, tt);
       switch (_.status) {
@@ -5992,9 +5992,9 @@ var Me, J, Vi, Te, zt, ri, tt, pt, Wi, oi, ai, Ht, Pt, gt, li, te, Si, xn, Dn, S
   }
   updateResult() {
     const e = R(this, Te), t = this.createResult(R(this, J), this.options);
-    if (Y(this, zt, R(this, J).state), Y(this, ri, this.options), R(this, zt).data !== void 0 && Y(this, ai, R(this, J)), Mn(t, e))
+    if (q(this, zt, R(this, J).state), q(this, ri, this.options), R(this, zt).data !== void 0 && q(this, ai, R(this, J)), Mn(t, e))
       return;
-    Y(this, Te, t);
+    q(this, Te, t);
     const i = () => {
       if (!e)
         return !0;
@@ -6030,27 +6030,27 @@ var Me, J, Vi, Te, zt, ri, tt, pt, Wi, oi, ai, Ht, Pt, gt, li, te, Si, xn, Dn, S
   if (Es || R(this, Te).isStale || !to(e))
     return;
   const i = Hu(R(this, Te).dataUpdatedAt, e) + 1;
-  Y(this, Ht, os.setTimeout(() => {
+  q(this, Ht, os.setTimeout(() => {
     R(this, Te).isStale || this.updateResult();
   }, i));
 }, Dn = function() {
   return (typeof this.options.refetchInterval == "function" ? this.options.refetchInterval(R(this, J)) : this.options.refetchInterval) ?? !1;
 }, Sn = function(e) {
-  ce(this, te, On).call(this), Y(this, gt, e), !(Es || Ue(this.options.enabled, R(this, J)) === !1 || !to(R(this, gt)) || R(this, gt) === 0) && Y(this, Pt, os.setInterval(() => {
+  ce(this, te, On).call(this), q(this, gt, e), !(Es || Ue(this.options.enabled, R(this, J)) === !1 || !to(R(this, gt)) || R(this, gt) === 0) && q(this, Pt, os.setInterval(() => {
     (this.options.refetchIntervalInBackground || Au.isFocused()) && ce(this, te, Si).call(this);
   }, R(this, gt)));
 }, Ln = function() {
   ce(this, te, xn).call(this), ce(this, te, Sn).call(this, ce(this, te, Dn).call(this));
 }, Fn = function() {
-  R(this, Ht) && (os.clearTimeout(R(this, Ht)), Y(this, Ht, void 0));
+  R(this, Ht) && (os.clearTimeout(R(this, Ht)), q(this, Ht, void 0));
 }, On = function() {
-  R(this, Pt) && (os.clearInterval(R(this, Pt)), Y(this, Pt, void 0));
+  R(this, Pt) && (os.clearInterval(R(this, Pt)), q(this, Pt, void 0));
 }, zn = function() {
   const e = R(this, Me).getQueryCache().build(R(this, Me), this.options);
   if (e === R(this, J))
     return;
   const t = R(this, J);
-  Y(this, J, e), Y(this, Vi, e.state), this.hasListeners() && (t == null || t.removeObserver(this), e.addObserver(this));
+  q(this, J, e), q(this, Vi, e.state), this.hasListeners() && (t == null || t.removeObserver(this), e.addObserver(this));
 }, Ma = function(e) {
   Vu.batch(() => {
     e.listeners && this.listeners.forEach((t) => {
@@ -7860,7 +7860,7 @@ function fd(r, e) {
       }) : rn.indexOf(m) > -1 && (t.config[m] = on(p));
     t.redraw(), Je(!0);
   }
-  function q(m, p) {
+  function Y(m, p) {
     var y = [];
     if (m instanceof Array)
       y = m.map(function(C) {
@@ -7896,7 +7896,7 @@ function fd(r, e) {
   function Z(m, p, y) {
     if (p === void 0 && (p = !1), y === void 0 && (y = t.config.dateFormat), m !== 0 && !m || m instanceof Array && m.length === 0)
       return t.clear(p);
-    q(m, y), t.latestSelectedDateObj = t.selectedDates[t.selectedDates.length - 1], t.redraw(), E(void 0, p), c(), t.selectedDates.length === 0 && t.clear(!1), Je(p), p && ae("onChange");
+    Y(m, y), t.latestSelectedDateObj = t.selectedDates[t.selectedDates.length - 1], t.redraw(), E(void 0, p), c(), t.selectedDates.length === 0 && t.clear(!1), Je(p), p && ae("onChange");
   }
   function ge(m) {
     return m.slice().map(function(p) {
@@ -7911,7 +7911,7 @@ function fd(r, e) {
   function Tt() {
     t.selectedDates = [], t.now = t.parseDate(t.config.now) || /* @__PURE__ */ new Date();
     var m = t.config.defaultDate || ((t.input.nodeName === "INPUT" || t.input.nodeName === "TEXTAREA") && t.input.placeholder && t.input.value === t.input.placeholder ? null : t.input.value);
-    m && q(m, t.config.dateFormat), t._initialDate = t.selectedDates.length > 0 ? t.selectedDates[0] : t.config.minDate && t.config.minDate.getTime() > t.now.getTime() ? t.config.minDate : t.config.maxDate && t.config.maxDate.getTime() < t.now.getTime() ? t.config.maxDate : t.now, t.currentYear = t._initialDate.getFullYear(), t.currentMonth = t._initialDate.getMonth(), t.selectedDates.length > 0 && (t.latestSelectedDateObj = t.selectedDates[0]), t.config.minTime !== void 0 && (t.config.minTime = t.parseDate(t.config.minTime, "H:i")), t.config.maxTime !== void 0 && (t.config.maxTime = t.parseDate(t.config.maxTime, "H:i")), t.minDateHasTime = !!t.config.minDate && (t.config.minDate.getHours() > 0 || t.config.minDate.getMinutes() > 0 || t.config.minDate.getSeconds() > 0), t.maxDateHasTime = !!t.config.maxDate && (t.config.maxDate.getHours() > 0 || t.config.maxDate.getMinutes() > 0 || t.config.maxDate.getSeconds() > 0);
+    m && Y(m, t.config.dateFormat), t._initialDate = t.selectedDates.length > 0 ? t.selectedDates[0] : t.config.minDate && t.config.minDate.getTime() > t.now.getTime() ? t.config.minDate : t.config.maxDate && t.config.maxDate.getTime() < t.now.getTime() ? t.config.maxDate : t.now, t.currentYear = t._initialDate.getFullYear(), t.currentMonth = t._initialDate.getMonth(), t.selectedDates.length > 0 && (t.latestSelectedDateObj = t.selectedDates[0]), t.config.minTime !== void 0 && (t.config.minTime = t.parseDate(t.config.minTime, "H:i")), t.config.maxTime !== void 0 && (t.config.maxTime = t.parseDate(t.config.maxTime, "H:i")), t.minDateHasTime = !!t.config.minDate && (t.config.minDate.getHours() > 0 || t.config.minDate.getMinutes() > 0 || t.config.minDate.getSeconds() > 0), t.maxDateHasTime = !!t.config.maxDate && (t.config.maxDate.getHours() > 0 || t.config.maxDate.getMinutes() > 0 || t.config.maxDate.getSeconds() > 0);
   }
   function Wt() {
     if (t.input = vi(), !t.input) {
@@ -19942,8 +19942,8 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
       M.value = w.value, E.value = !0;
     }
     function A() {
-      const q = M.value.trim();
-      w.value = q || "Trades", d(w.value), E.value = !1;
+      const Y = M.value.trim();
+      w.value = Y || "Trades", d(w.value), E.value = !1;
     }
     const j = [
       "legal_entity",
@@ -19963,8 +19963,8 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
       "ibCommission",
       "closePrice"
     ], W = ie(c(j)), T = ie(b());
-    Ae(W, (q) => {
-      f(q);
+    Ae(W, (Y) => {
+      f(Y);
     }, { deep: !0 });
     const D = ie(!1), z = ie(null), P = ie(null);
     function _() {
@@ -19974,12 +19974,12 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
       D.value = !1;
     }
     const De = ie(!1), It = ie(""), Nt = ie("");
-    function zs(q, Z) {
-      It.value = q, Nt.value = Z, De.value = !0;
+    function zs(Y, Z) {
+      It.value = Y, Nt.value = Z, De.value = !0;
     }
     function qi() {
-      const q = Nt.value.trim();
-      q && It.value && (T.value[It.value] = q, g(T.value)), De.value = !1;
+      const Y = Nt.value.trim();
+      Y && It.value && (T.value[It.value] = Y, g(T.value)), De.value = !1;
     }
     function Yi() {
       De.value = !1;
@@ -19990,23 +19990,23 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
     function gi() {
       console.log("Minimize event received in Trades.vue"), i("minimize"), t.onMinimize && t.onMinimize();
     }
-    function Ps(q) {
-      if (q <= 0) return;
-      const Z = [...W.value], [ge] = Z.splice(q, 1);
-      Z.splice(q - 1, 0, ge), W.value = Z, f(Z);
+    function Ps(Y) {
+      if (Y <= 0) return;
+      const Z = [...W.value], [ge] = Z.splice(Y, 1);
+      Z.splice(Y - 1, 0, ge), W.value = Z, f(Z);
     }
-    function _s(q) {
-      if (q >= W.value.length - 1) return;
-      const Z = [...W.value], [ge] = Z.splice(q, 1);
-      Z.splice(q + 1, 0, ge), W.value = Z, f(Z);
+    function _s(Y) {
+      if (Y >= W.value.length - 1) return;
+      const Z = [...W.value], [ge] = Z.splice(Y, 1);
+      Z.splice(Y + 1, 0, ge), W.value = Z, f(Z);
     }
     function As() {
       W.value = [...j], f(W.value);
     }
-    function st(q) {
+    function st(Y) {
       var Tt, Wt;
       const Z = ((Tt = z.value) == null ? void 0 : Tt.$el) || z.value, ge = ((Wt = P.value) == null ? void 0 : Wt.$el) || P.value;
-      D.value && Z && ge && !Z.contains(q.target) && !ge.contains(q.target) && pe();
+      D.value && Z && ge && !Z.contains(Y.target) && !ge.contains(Y.target) && pe();
     }
     Rr(() => {
       document.addEventListener("click", st);
@@ -20016,8 +20016,8 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
     function bi() {
       return [
         {
-          label: (q) => {
-            const Z = q.getData();
+          label: (Y) => {
+            const Z = Y.getData();
             return md(Z.fetched_at);
           },
           action: () => {
@@ -20029,7 +20029,7 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
         },
         {
           label: "📋 Copy timestamp to clipboard",
-          action: (q, Z) => {
+          action: (Y, Z) => {
             const Tt = Z.getData().fetched_at;
             Tt ? navigator.clipboard.writeText(Tt).then(() => {
               a("success", "Copied!", "Timestamp copied to clipboard");
@@ -20069,21 +20069,21 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
       h,
       Vs,
       Ct,
-      (q, Z) => {
-        q === "row-click" ? i("row-click", Z) : q === "minimize" ? i("minimize") : q === "maximize" && i("maximize");
+      (Y, Z) => {
+        Y === "row-click" && i("row-click", Z);
       },
       t.onRowClick
     );
-    return Ae(Vt, (q) => {
-      qe.value = q;
-    }), Ae(js, (q) => {
-      yt.value = q;
+    return Ae(Vt, (Y) => {
+      qe.value = Y;
+    }), Ae(js, (Y) => {
+      yt.value = Y;
     }), Rr(() => {
       s && (s.on("account-filter-changed", vi), s.on("symbol-filter-changed", wi), s.on("asset-filter-changed", Et), s.on("quantity-filter-changed", Ki));
     }), fn(() => {
-      var q;
-      s && (s.off("account-filter-changed", vi), s.off("symbol-filter-changed", wi), s.off("asset-filter-changed", Et), s.off("quantity-filter-changed", Ki)), (q = n._cleanup) == null || q.call(n);
-    }), (q, Z) => (le(), de("div", pm, [
+      var Y;
+      s && (s.off("account-filter-changed", vi), s.off("symbol-filter-changed", wi), s.off("asset-filter-changed", Et), s.off("quantity-filter-changed", Ki)), (Y = n._cleanup) == null || Y.call(n);
+    }), (Y, Z) => (le(), de("div", pm, [
       Ei(jf, {
         toasts: Pe(o),
         onRemove: Pe(l)
