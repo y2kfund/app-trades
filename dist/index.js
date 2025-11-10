@@ -19920,8 +19920,6 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
     accountId: { default: "1" },
     highlightPnL: { type: Boolean, default: !1 },
     onRowClick: {},
-    onMaximize: {},
-    onMinimize: {},
     showHeaderLink: { type: Boolean, default: !1 },
     userId: { default: null },
     window: { default: null }
@@ -19985,10 +19983,10 @@ const Vf = { class: "toast-container" }, Wf = { key: 0 }, Bf = ["onClick"], jf =
       De.value = !1;
     }
     function Hs() {
-      console.log("Maximize event received in Trades.vue"), i("maximize"), t.onMaximize && t.onMaximize();
+      console.log("✅ Maximize event received in Trades.vue"), i("maximize");
     }
     function gi() {
-      console.log("Minimize event received in Trades.vue"), i("minimize"), t.onMinimize && t.onMinimize();
+      console.log("✅ Minimize event received in Trades.vue"), i("minimize");
     }
     function Ps(Y) {
       if (Y <= 0) return;

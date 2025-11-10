@@ -144,19 +144,13 @@ function cancelColRename() {
 
 // Maximize/Minimize handlers
 function handleMaximize() {
-  console.log('Maximize event received in Trades.vue')
+  console.log('✅ Maximize event received in Trades.vue')
   emit('maximize')
-  if (props.onMaximize) {
-    props.onMaximize()
-  }
 }
 
 function handleMinimize() {
-  console.log('Minimize event received in Trades.vue')
+  console.log('✅ Minimize event received in Trades.vue')
   emit('minimize')
-  if (props.onMinimize) {
-    props.onMinimize()
-  }
 }
 
 // Column reordering (Up/Down buttons)
